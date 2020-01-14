@@ -1,0 +1,18 @@
+version: '3.3'
+services:
+  vnfdservice:
+    image: vnfdservice:test
+    build:
+      context: ../../
+      dockerfile: build/package/Dockerfile_test
+    environment:
+      - RESULTS_DIR=/go/src/github.com/vishwanathj/protovnfdparser/results
+    volumes:
+      - ../../results:/go/src/github.com/vishwanathj/protovnfdparser/results
+    working_dir: /go/src/github.com/vishwanathj/golangexercises/go_web_server
+    #https://stackoverflow.com/questions/51022134/docker-compose-cant-print-environment-variable-in-docker-container
+    #https://docs.docker.com/compose/compose-file/#variable-substitution
+    command: bash -c "printenv PWD && echo $$RESULTS_DIR && ls -l $$RESULTS_DIR
+      && go test ./... -coverprofile=$$RESULTS_DIR/coverage_unit.out -tags=unit
+      && golint ./... &> $$RESULTS_DIR/lint.out
+      && go tool vet . &> $$RESULTS_DIR/vet.out"

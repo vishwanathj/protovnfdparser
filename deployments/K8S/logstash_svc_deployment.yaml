@@ -1,0 +1,38 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: logstash
+  labels:
+    components: logstash
+spec:
+  selector:
+    matchLabels:
+      component: logstash
+  replicas: 1
+  template:
+    metadata:
+      labels:
+        component: logstash
+    spec:
+      containers:
+        - name: logstash
+          image: vishwanathj/logstash:1.0.0
+          ports:
+            - containerPort: 5044
+          env:
+            - name: LOG_LEVEL
+              value: error
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: logstash
+  labels:
+    component: logstash
+spec:
+  type: NodePort
+  ports:
+    - port: 5044
+      nodePort: 30044
+  selector:
+    component: logstash

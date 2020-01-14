@@ -1,0 +1,35 @@
+FROM golang:1.11.2 as builder
+
+WORKDIR /go/src/github.com/vishwanathj/golangexercises/go_web_server
+
+ADD ./ /go/src/github.com/vishwanathj/protovnfdparser/
+
+WORKDIR /go/src/github.com/vishwanathj/protovnfdparser/cmd/app
+#RUN go get -d -v
+#RUN go get gopkg.in/tomb.v2 github.com/stretchr/testify golang.org/x/lint/golint
+
+#RUN CGO_ENABLED=0 GOOS=linux go build -a -installsuffix cgo -o app .
+RUN CGO_ENABLED=0 GOOS=`go env GOHOSTOS` GOARCH=`go env GOHOSTARCH` go build -a -installsuffix cgo -o /go/bin/vnfdservice .
+
+
+WORKDIR /go/src/github.com/vishwanathj/protovnfdparser/
+#https://stackoverflow.com/questions/25965584/separating-unit-tests-and-integration-tests-in-go
+ADD ./pkg/schema/* /go/src/github.com/vishwanathj/protovnfdparser/pkg/schema/* /usr/share/vnfdservice/schema/
+RUN go test ./... -coverprofile=coverage.out -tags=unit
+
+FROM golang:1.11.2-alpine
+#RUN apk --no-cache add ca-certificates
+
+#WORKDIR /go/src/github.com/vishwanathj/protovnfdparser/pkg/schema
+COPY --from=builder /go/bin/* /go/bin/
+#COPY --from=builder /go/pkg/* /go/pkg/
+#COPY --from=builder /go/src/github.com/vishwanathj/protovnfdparser/pkg/schema/* /go/src/github.com/vishwanathj/protovnfdparser/pkg/schema/
+COPY --from=builder /go/src/github.com/vishwanathj/protovnfdparser/pkg/schema/* /usr/share/vnfdservice/schema/
+COPY --from=builder /go/src/github.com/vishwanathj/protovnfdparser/test/* /usr/share/vnfdservice/test/
+
+RUN rm -rf /usr/share/vnfdservice/test/jmeter/
+WORKDIR /usr/share/vnfdservice/test/
+#RUN apt-get update && apt-get install -y netcat dnsutils
+RUN apk add --update openssl bind-tools nmap && \
+    rm -rf /var/cache/apk/*
+RUN openssl req -x509 -nodes -days 365 -newkey rsa:2048 -keyout /etc/ssl/certs/vnfdsvc.key -out /etc/ssl/certs/vnfdsvc.crt -subj /CN=vnfdsvc/O=vnfdsvc

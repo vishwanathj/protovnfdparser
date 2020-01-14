@@ -1,0 +1,31 @@
+FROM golang:1.11.2-alpine3.7 as builder
+ENV CGO_ENABLED 0
+ADD ./ /go/src/github.com/vishwanathj/protovnfdparser/
+# The -gcflags "all=-N -l" flag helps us get a better debug experience
+RUN go build -gcflags "all=-N -l" -o /go/bin/vnfdservice /go/src/github.com/vishwanathj/protovnfdparser/cmd/app
+
+
+# Compile Delve
+RUN apk add --no-cache git gcc libc-dev
+RUN go get github.com/derekparker/delve/cmd/dlv
+
+FROM golang:1.11.2-alpine3.7
+#RUN apk --no-cache add ca-certificates
+# Port 8080 belongs to our application, 40000 belongs to Delve
+EXPOSE 8080 40000
+
+# Allow delve to run on Alpine based containers.
+RUN apk add --no-cache libc6-compat
+WORKDIR /
+#WORKDIR /go/src/github.com/vishwanathj/protovnfdparser/pkg/schema
+COPY --from=builder /go/bin/* /go/bin/
+COPY --from=builder /go/src/github.com/vishwanathj/protovnfdparser/pkg/schema/* /usr/share/vnfdservice/schema/
+COPY --from=builder /go/src/github.com/vishwanathj/protovnfdparser/test/* /usr/share/vnfdservice/test/
+
+RUN rm -rf /usr/share/vnfdservice/test/jmeter/
+WORKDIR /usr/share/vnfdservice/test/
+#RUN apt-get update && apt-get install -y netcat dnsutils
+#RUN openssl req -x509 -nodes -days 365 -newkey rsa:2048 -keyout /etc/ssl/certs/vnfdsvc.key -out /etc/ssl/certs/vnfdsvc.crt -subj /CN=vnfdsvc/O=vnfdsvc
+
+# Run delve
+CMD ["/go/bin/dlv", "--listen=:40000", "--headless=true", "--api-version=2", "exec", "/go/bin/vnfdservice -ip mongo"]

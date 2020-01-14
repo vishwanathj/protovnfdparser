@@ -1,0 +1,21 @@
+version: '3.3'
+services:
+  vnfdservice:
+    image: vnfdservice_delve
+    build:
+      context: ../../
+      dockerfile: build/package/Dockerfile_delve
+    environment:
+      LOGFILE: /var/log/go_web_server.log
+    ports:
+      - "8080:8080"
+      - "40000:40000"
+    security_opt:
+      - apparmor=unconfined
+    cap_add:
+      - SYS_PTRACE
+    command: dlv --listen=:40000 --headless=true --api-version=2 exec /go/bin/vnfdservice -- -ip mongo
+  mongo:
+    image: mongo:4-xenial
+    ports:
+      - "27017:27017"

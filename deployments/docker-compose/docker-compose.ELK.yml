@@ -1,0 +1,93 @@
+version: '3.3'
+services:
+  #elk:
+    #image: sebp/elk:E1L1K4
+    #ports:
+      #- "5601:5601"
+      #- "9200:9200"
+      #- "5044:5044"
+  filebeat:
+    hostname: filebeat
+    #image: filebeat:1.0.0
+    image: vishwanathj/filebeat:6.5.2
+    build:
+      context: ../../build/package
+      dockerfile: Dockerfile_filebeat
+    volumes:
+      # needed to access all docker logs (read only) :
+      - "/var/lib/docker/containers:/usr/share/dockerlogs/data:ro"
+      # needed to access additional informations about containers
+      - "/var/run/docker.sock:/var/run/docker.sock"
+      - "../../build/package/filebeat.yml:/etc/filebeat/filebeat.yml"
+      - "../../build/package/filebeat.yml:/usr/share/filebeat/filebeat.yml"
+    links:
+      - logstash
+    depends_on:
+      - logstash
+  metricbeat:
+    hostname: metricbeat
+    #image: docker.elastic.co/beats/metricbeat:6.2.3
+    image: docker.elastic.co/beats/metricbeat:6.5.2
+    volumes:
+      - "../../build/package/metricbeat.yml:/usr/share/metricbeat/metricbeat.yml"
+    depends_on:
+      - logstash
+  kibana:
+    #image: kibana:6.5.2
+    image: vishwanathj/kibana:6.5.2
+    environment:
+      - "LOGGING_QUIET=true"
+    links:
+      - elasticsearch
+    ports:
+      - 5601:5601
+    depends_on:
+      - elasticsearch
+  logstash:
+    hostname: logstash
+    #image: logstash:1.0.0
+    image: vishwanathj/logstash:6.5.2
+    build:
+      context: ../../build/package
+      dockerfile: Dockerfile_logstash
+    ports:
+      - 5044:5044
+    #environment:
+      #LOG_LEVEL: error
+    volumes:
+      - "../../build/package/config/logstash.yml:/usr/share/logstash/config/logstash.yml"
+    links:
+      - elasticsearch
+    depends_on:
+      - elasticsearch
+  elasticsearch:
+    hostname: elasticsearch
+    #image: elasticsearch:1.0.0
+    image: vishwanathj/elasticsearch:6.5.2
+    build:
+      context: ../../build/package
+      dockerfile: Dockerfile_elasticsearch
+    environment:
+      - cluster.name=docker-logs-elk-cluster
+      - bootstrap.memory_lock=true
+      - "ES_JAVA_OPTS=-Xms256m -Xmx256m"
+    ulimits:
+      memlock:
+        soft: -1
+        hard: -1
+    ports:
+      - 9200:9200
+  #vnfdservice:
+   # image: vnfdservice
+    #build:
+     # context: ../../
+      #dockerfile: build/package/Dockerfile
+    #environment:
+     # LOGFILE: /var/log/go_web_server.log
+    #ports:
+     # - "8080:8080"
+    #command: vnfdservice -ip mongo
+  #mongo:
+   # image: mongo:4-xenial
+   # ports:
+   #   - "27017:27017"

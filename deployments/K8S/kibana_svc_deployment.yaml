@@ -1,0 +1,40 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: kibana
+  labels:
+    component: kibana
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      component: kibana
+  template:
+    metadata:
+      labels:
+        component: kibana
+    spec:
+      containers:
+        - name: kibana
+          #image: docker.elastic.co/kibana/kibana-oss:6.3.2
+          image: kibana:6.5.2
+          ports:
+            - containerPort: 5601
+              name: http
+          env:
+            - name: "LOGGING_QUIET"
+              value: "true"
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: kibana
+  labels:
+    component: kibana
+spec:
+  selector:
+    component: kibana
+  type: NodePort
+  ports:
+    - port: 5601
+      nodePort: 30601

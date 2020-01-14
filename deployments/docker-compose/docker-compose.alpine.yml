@@ -1,0 +1,16 @@
+version: '3.3'
+services:
+  vnfdservice:
+    image: vnfdservice_alpine
+    build:
+      context: ../../
+      dockerfile: build/package/Dockerfile_alpine
+    environment:
+      LOGFILE: /var/log/go_web_server.log
+    ports:
+      - "8080:8080"
+    command: vnfdservice -ip mongo
+  mongo:
+    image: mongo:4-xenial
+    ports:
+      - "27017:27017"

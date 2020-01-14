@@ -1,0 +1,67 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: vnfdsvc
+spec:
+  selector:
+    matchLabels:
+      app: vnfdsvc
+  replicas: 1
+  template:
+    metadata:
+      name: vnfdsvc
+      labels:
+        app: vnfdsvc
+    spec:
+      hostname: vnfdsvc
+      containers:
+        - name: appsvc
+          image: vishwanathj/vnfdservice:latest
+          imagePullPolicy: IfNotPresent
+          lifecycle:
+            postStart:
+              exec:
+                command: ["/bin/sh", "-c", "echo Hello from the postStart handler > /usr/share/message1"]
+            preStop:
+              exec:
+                command: ["/bin/sh", "-c", "echo Hello from the preStop handler > /usr/share/message2"]
+          resources:
+            requests:
+              memory: "50Mi"
+              cpu: "0.1"
+            limits:
+              memory: "100Mi"
+              cpu: "0.3"
+          command: ["/go/bin/vnfdservice"]
+          args: ["-ip", "mongo"]
+          ports:
+            - containerPort: 8080
+          livenessProbe:
+            httpGet:
+              port: 8080
+              path: /health
+            initialDelaySeconds: 15
+            timeoutSeconds: 1
+          readinessProbe:
+            httpGet:
+              port: 8080
+              path: /readiness
+            #exec:
+              #command:
+                #- nc -z mongo 27017
+            initialDelaySeconds: 15
+            timeoutSeconds: 1
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: vnfdsvc
+  labels:
+    app: vnfdsvc
+spec:
+  type: NodePort
+  ports:
+    - port: 8080
+      nodePort: 30080
+  selector:
+    app: vnfdsvc
