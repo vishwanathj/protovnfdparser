@@ -1,7 +1,7 @@
 FROM golang:1.11.2
 
 #docker build -t jenkins/jenkins_make:2.150.1 - < dockerfiles/Dockerfile-jenkins-with-makefile
-WORKDIR /go/src/github.com/vishwanathj/golangexercises/go_web_server
+WORKDIR /go/src/github.com/vishwanathj/protovnfdparser
 
 ADD ./ /go/src/github.com/vishwanathj/protovnfdparser/
 

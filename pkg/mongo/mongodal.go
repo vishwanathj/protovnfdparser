@@ -1,7 +1,10 @@
 package mongo
 
 import (
+	"fmt"
 	"log"
+
+	"github.com/vishwanathj/protovnfdparser/pkg/config"
 
 	"github.com/vishwanathj/protovnfdparser/pkg/dataaccess"
 	"github.com/vishwanathj/protovnfdparser/pkg/models"
@@ -17,17 +20,21 @@ type MongoDAL struct {
 }
 
 // NewMongoDAL creates a new MongoDAL
-func NewMongoDAL(dbURI string, dbName string, collectionName string) (dataaccess.DataAccessLayer, error) {
+func NewMongoDAL(cfg config.Config) (dataaccess.VnfdRepository, error) {
+	if cfg.MongoDBConfig == nil {
+		panic("mongodb config missing")
+	}
+	dbURI := fmt.Sprintf("%s:%d", cfg.MongoDBConfig.MongoIP, cfg.MongoDBConfig.MongoPort)
 	ms, err := NewSession(dbURI)
 	if err != nil {
 		log.Fatal("unable to connect to mongodb:", err)
 	}
 
-	collection := ms.GetCollection(dbName, collectionName)
+	collection := ms.GetCollection(cfg.MongoDBConfig.MongoDBName, cfg.MongoDBConfig.MongoColName)
 	collection.EnsureIndex(vnfdMgoModelIndex())
 	mongo := &MongoDAL{
 		session:    ms.session,
-		dbName:     dbName,
+		dbName:     cfg.MongoDBConfig.MongoDBName,
 		collection: collection,
 	}
 	return mongo, nil
@@ -43,7 +50,7 @@ func (m *MongoDAL) Insert(collectionName string, docs ...interface{}) error {
 	return m.c(collectionName).Insert(docs)
 }
 
-// Insert stores documents in mongo
+// InsertVnfd stores Vnfd documents in mongo
 func (m *MongoDAL) InsertVnfd(vnfd *models.Vnfd) error {
 	// the conversion function below ensures that `_id` values is populated with `VNFD-{UUID} value`
 	mgoModel := toVnfdMgoModel(vnfd)

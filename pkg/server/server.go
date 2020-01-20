@@ -5,7 +5,7 @@ import (
 	"net/http"
 	"os"
 
-	"github.com/vishwanathj/protovnfdparser/pkg/dataaccess"
+	"github.com/vishwanathj/protovnfdparser/pkg/config"
 
 	"github.com/gorilla/handlers"
 	"github.com/gorilla/mux"
@@ -13,36 +13,29 @@ import (
 	"github.com/vishwanathj/protovnfdparser/pkg/models"
 )
 
-// VnfdBasePath the base URI path for REST operations
-//const VnfdBasePath = "/vnfds"
-const VnfdBasePath = "/"
-
-// WebServerPort the port on which the web server runs
-const WebServerPort = "8080"
-
-// WebServerSecurePort the port on which the secure web server runs
-const WebServerSecurePort = "443"
-
 // Server struct to hold the mux router object
 type Server struct {
 	router *mux.Router
+	config *config.WebServerConfig
 }
 
 // NewServer creates a new mux server
-func NewServer(u models.VnfdService, dal dataaccess.DataAccessLayer) *Server {
+func NewServer(v models.VnfdService, cfg *config.WebServerConfig) *Server {
 	log.Debug()
-	s := Server{router: mux.NewRouter()}
-	NewVnfdRouter(u, dal, s.newSubrouter(VnfdBasePath))
+	s := Server{router: mux.NewRouter(), config: cfg}
+	NewVnfdRouter(v, s.newSubrouter(cfg.WebServerBasePath))
 	return &s
 }
 
 // Start starts the web server
 func (s *Server) Start() {
 	log.Debug()
-	fmt.Println("Listening on port: ", WebServerPort)
-	go http.ListenAndServeTLS(":"+WebServerSecurePort, "/etc/ssl/certs/vnfdsvc.crt",
+	webServerPort := fmt.Sprintf("%d", s.config.WebServerPort)
+	webServerSecurePort := fmt.Sprintf("%d", s.config.WebServerSecurePort)
+	fmt.Println("Listening on port: ", webServerPort)
+	go http.ListenAndServeTLS(":"+webServerSecurePort, "/etc/ssl/certs/vnfdsvc.crt",
 		"/etc/ssl/certs/vnfdsvc.key", handlers.LoggingHandler(os.Stdout, s.router))
-	if err := http.ListenAndServe(":"+WebServerPort, handlers.LoggingHandler(os.Stdout, s.router)); err != nil {
+	if err := http.ListenAndServe(":"+webServerPort, handlers.LoggingHandler(os.Stdout, s.router)); err != nil {
 		log.Fatal("http.ListenAndServe: ", err)
 	}
 }

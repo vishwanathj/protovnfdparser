@@ -1,0 +1,13 @@
+github.com/vishwanathj/protovnfdparser/pkg/models/pagination.go:51:	MakeFirstHref					100.0%
+github.com/vishwanathj/protovnfdparser/pkg/models/pagination.go:75:	MakeNextHref					100.0%
+github.com/vishwanathj/protovnfdparser/pkg/models/vnfd.go:58:		SetCreationTimeAttributes			0.0%
+github.com/vishwanathj/protovnfdparser/pkg/utils/utils.go:39:		init						62.5%
+github.com/vishwanathj/protovnfdparser/pkg/utils/utils.go:63:		ValidateVnfdPostBody				100.0%
+github.com/vishwanathj/protovnfdparser/pkg/utils/utils.go:72:		ValidateVnfdInstanceBody			100.0%
+github.com/vishwanathj/protovnfdparser/pkg/utils/utils.go:81:		ValidatePaginatedVnfdsInstancesBody		100.0%
+github.com/vishwanathj/protovnfdparser/pkg/utils/utils.go:90:		ValidateInputParamAgainstParameterizedVnfd	77.8%
+github.com/vishwanathj/protovnfdparser/pkg/utils/utils.go:110:		GenerateJSONSchemaFromParameterizedTemplate	77.8%
+github.com/vishwanathj/protovnfdparser/pkg/utils/utils.go:130:		GetAbsDIRPathGivenRelativePath			85.7%
+github.com/vishwanathj/protovnfdparser/pkg/utils/utils.go:144:		GetSchemaStringWhenGivenFilePath		88.9%
+github.com/vishwanathj/protovnfdparser/pkg/utils/utils.go:160:		GetSchemaDefinitionFileAsJSONBuf		77.8%
+total:									(statements)					81.8%

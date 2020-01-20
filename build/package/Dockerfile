@@ -4,7 +4,7 @@ RUN go get -u github.com/golang/dep/cmd/dep
 
 RUN go get -u github.com/golangci/golangci-lint/cmd/golangci-lint
 
-WORKDIR /go/src/github.com/vishwanathj/golangexercises/go_web_server
+WORKDIR /go/src/github.com/vishwanathj/protovnfdparser
 
 ADD ./ /go/src/github.com/vishwanathj/protovnfdparser/
 

@@ -9,7 +9,7 @@ services:
       - RESULTS_DIR=/go/src/github.com/vishwanathj/protovnfdparser/results
     volumes:
       - ../../results:/go/src/github.com/vishwanathj/protovnfdparser/results
-    working_dir: /go/src/github.com/vishwanathj/golangexercises/go_web_server
+    working_dir: /go/src/github.com/vishwanathj/protovnfdparser
     #https://stackoverflow.com/questions/51022134/docker-compose-cant-print-environment-variable-in-docker-container
     #https://docs.docker.com/compose/compose-file/#variable-substitution
     command: bash -c "printenv PWD && echo $$RESULTS_DIR && ls -l $$RESULTS_DIR

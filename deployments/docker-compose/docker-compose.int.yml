@@ -4,8 +4,8 @@ services:
     command: bash -c "go test -v ./... -coverprofile=$$RESULTS_DIR/coverage_integration.out -tags=integration
       && go tool cover -html=$$RESULTS_DIR/coverage_integration.out -o $$RESULTS_DIR/coverage_integration.html"
     environment:
-      mongoIP: mongo
-      mongoPort: 27017
+      MONGO_IP: mongo
+      MONGO_PORT: 27017
       #MONGO_INIT_DATABASE: test_db
       #https://stackoverflow.com/questions/42912755/how-to-create-a-db-for-mongodb-container-on-start-up
     depends_on:

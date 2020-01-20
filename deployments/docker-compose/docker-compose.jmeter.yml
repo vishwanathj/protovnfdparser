@@ -1,9 +1,13 @@
 version: '3.3'
 services:
   vnfdservice:
+    environment:
+      MONGO_IP: mongo
+      MONGO_PORT: 27017
     depends_on:
       - mongo
-    command: vnfdservice -ip mongo
+    #command: vnfdservice -ip mongo
+    command: vnfdservice
   mongo:
     image: mongo:4-xenial
     ports:

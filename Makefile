@@ -72,7 +72,7 @@ docker-build-test:
 docker-unit: docker-clean
 		docker-compose -f $(DEPLOYMENT_DIR)/docker-compose.unit.yml up
 docker-integration: docker-clean
-		docker-compose -f $(DEPLOYMENT_DIR)/docker-compose.unit.yml -f $(DEPLOYMENT_DIR)/docker-compose.int.yml up
+		docker-compose -f $(DEPLOYMENT_DIR)/docker-compose.unit.yml -f $(DEPLOYMENT_DIR)/docker-compose.int.yml up --abort-on-container-exit
 docker-ELK: docker-clean
 		docker-compose -f $(DEPLOYMENT_DIR)/docker-compose.yml -f $(DEPLOYMENT_DIR)/docker-compose.ELK.yml up -d
 docker-jmeter: docker-clean

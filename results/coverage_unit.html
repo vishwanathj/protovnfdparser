@@ -1,0 +1,553 @@
+
+<!DOCTYPE html>
+<html>
+	<head>
+		<meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+		<style>
+			body {
+				background: black;
+				color: rgb(80, 80, 80);
+			}
+			body, pre, #legend span {
+				font-family: Menlo, monospace;
+				font-weight: bold;
+			}
+			#topbar {
+				background: black;
+				position: fixed;
+				top: 0; left: 0; right: 0;
+				height: 42px;
+				border-bottom: 1px solid rgb(80, 80, 80);
+			}
+			#content {
+				margin-top: 50px;
+			}
+			#nav, #legend {
+				float: left;
+				margin-left: 10px;
+			}
+			#legend {
+				margin-top: 12px;
+			}
+			#nav {
+				margin-top: 10px;
+			}
+			#legend span {
+				margin: 0 5px;
+			}
+			.cov0 { color: rgb(192, 0, 0) }
+.cov1 { color: rgb(128, 128, 128) }
+.cov2 { color: rgb(116, 140, 131) }
+.cov3 { color: rgb(104, 152, 134) }
+.cov4 { color: rgb(92, 164, 137) }
+.cov5 { color: rgb(80, 176, 140) }
+.cov6 { color: rgb(68, 188, 143) }
+.cov7 { color: rgb(56, 200, 146) }
+.cov8 { color: rgb(44, 212, 149) }
+.cov9 { color: rgb(32, 224, 152) }
+.cov10 { color: rgb(20, 236, 155) }
+
+		</style>
+	</head>
+	<body>
+		<div id="topbar">
+			<div id="nav">
+				<select id="files">
+				
+				<option value="file0">github.com/vishwanathj/protovnfdparser/pkg/models/pagination.go (100.0%)</option>
+				
+				<option value="file1">github.com/vishwanathj/protovnfdparser/pkg/models/vnfd.go (0.0%)</option>
+				
+				<option value="file2">github.com/vishwanathj/protovnfdparser/pkg/utils/utils.go (80.3%)</option>
+				
+				</select>
+			</div>
+			<div id="legend">
+				<span>not tracked</span>
+			
+				<span class="cov0">not covered</span>
+				<span class="cov8">covered</span>
+			
+			</div>
+		</div>
+		<div id="content">
+		
+		<pre class="file" id="file0" style="display: none">package models
+
+import (
+        "bytes"
+        "strconv"
+)
+
+// BaseURI  The base URI that's used by REST assured when making requests if
+// a non-fully qualified URI is used in the request
+const BaseURI = "http://localhost:8080"
+
+// DefaultLimit is the count of results that would be returned when no value
+// for Limit attribute is specified
+const DefaultLimit = 5
+
+// MaxLimit is the maximum value that is supported for the the Limit attribute
+const MaxLimit = 10
+
+// MinLimit is the minimum value that is supported for the the Limit attribute
+const MinLimit = 1
+
+// Link captures the URL info
+type Link struct {
+        Href string `json:"href" binding:"required,url"`
+}
+
+// PaginatedCollection captures the attributes required for pagination results
+type PaginatedCollection struct {
+        Limit      int   `json:"limit" binding:"required,min=1,max=10"`
+        TotalCount int   `json:"total_count" binding:"required,gte=0"`
+        First      *Link `json:"first" binding:"required"`
+        Next       *Link `json:"next,omitempty"`
+}
+
+// DefaultOrderBy will store the property definitions should be ordered by,
+// by default
+const DefaultOrderBy = "name"
+
+// PaginationQueryParameters contains the query parameters a user can specify in a GET
+// list request
+type PaginationQueryParameters struct {
+        OrderBy string
+}
+
+// MakeFirstHref -- make href for First link in collection
+/*
+At the moment only one PaginationQueryParameters object is expected. This
+object will store additional query parameters (such as sort) which should be
+appended to the Next Href.
+*/
+func MakeFirstHref(limit int, apipath string, vars ...PaginationQueryParameters) string <span class="cov8" title="1">{
+        var buffer bytes.Buffer
+        //buffer.WriteString(ctx.Value(riaascontext.RiaasBaseURI).(string))
+        buffer.WriteString(BaseURI)
+        //buffer.WriteString(baseURI())
+        buffer.WriteString(apipath)
+        buffer.WriteString("?limit=")
+        buffer.WriteString(strconv.Itoa(limit))
+        if len(vars) &gt; 0 </span><span class="cov8" title="1">{
+                orderBy := vars[0].OrderBy
+                if orderBy != DefaultOrderBy &amp;&amp; orderBy != "" </span><span class="cov8" title="1">{
+                        buffer.WriteString("&amp;sort=")
+                        buffer.WriteString(orderBy)
+                }</span>
+        }
+        <span class="cov8" title="1">return buffer.String()</span>
+}
+
+// MakeNextHref -- make href for next link in collection
+/*
+At the moment only one PaginationQueryParameters object is expected. This
+object will store additional query parameters (such as sort) which should be
+appended to the Next Href.
+*/
+func MakeNextHref(limit int, start string, apipath string, vars ...PaginationQueryParameters) string <span class="cov8" title="1">{
+        var buffer bytes.Buffer
+        //buffer.WriteString(ctx.Value(riaascontext.RiaasBaseURI).(string))
+        buffer.WriteString(BaseURI)
+        //buffer.WriteString(baseURI())
+        buffer.WriteString(apipath)
+        buffer.WriteString("?start=")
+        buffer.WriteString(start)
+        buffer.WriteString("&amp;limit=")
+        buffer.WriteString(strconv.Itoa(limit))
+        if len(vars) &gt; 0 </span><span class="cov8" title="1">{
+                orderBy := vars[0].OrderBy
+                if orderBy != DefaultOrderBy &amp;&amp; orderBy != "" </span><span class="cov8" title="1">{
+                        buffer.WriteString("&amp;sort=")
+                        buffer.WriteString(orderBy)
+                }</span>
+        }
+        <span class="cov8" title="1">return buffer.String()</span>
+}
+</pre>
+		
+		<pre class="file" id="file1" style="display: none">package models
+
+import (
+        "time"
+
+        "github.com/satori/go.uuid"
+)
+
+// IDPrefix VNFD ID prefix
+const IDPrefix = "VNFD-"
+
+// Available the vnfd status at creation time
+const Available = "available"
+
+// Vnfd Struct for holding Vnfd data
+// Refer https://www.sohamkamani.com/blog/golang/2018-07-19-golang-omitempty/
+// for the reason Vdus, Constraints, HA, ScaleInOut, VLs are declared as pointers
+type Vnfd struct {
+        //ID        string `json:"id,omitempty" bson:"_id"`
+        // remove the above comment if there are failures in creating and retrieving VNFDs
+        // below is a refactor attempting to get rid of `"bson:" _id"' that is mongo specific
+        ID        string `json:"id,omitempty"`
+        Name      string `json:"name"`
+        Status    string `json:"status"`
+        CreatedAt string `json:"created_at"`
+        Vdus      []*struct {
+                Constraints *struct {
+                        Dedicated interface{} `json:"dedicated,omitempty"`
+                        Vim_ID    string      `json:"vim_id,omitempty"`
+                } `json:"constraints,omitempty"`
+                Disk_Size         interface{} `json:"disk_size"`
+                High_Availability *string     `json:"high_availability,omitempty"`
+                Image             string      `json:"image"`
+                Memory            interface{} `json:"memory"`
+                Name              string      `json:"name"`
+                Scale_In_Out      *struct {
+                        Default interface{} `json:"default"`
+                        Maximum interface{} `json:"maximum"`
+                        Minimum interface{} `json:"minimum"`
+                } `json:"scale_in_out,omitempty"`
+                Vcpus interface{} `json:"vcpus"`
+                Vnfcs []struct {
+                        Connection_Points []struct {
+                                IP_Address           string   `json:"ip_address"`
+                                Name                 string   `json:"name"`
+                                VirtualLinkReference []string `json:"virtualLinkReference"`
+                        } `json:"connection_points"`
+                        Name string `json:"name"`
+                } `json:"vnfcs"`
+        } `json:"vdus"`
+        Virtual_Links []*struct {
+                Name          string `json:"name"`
+                Is_management bool   `json:"is_management,omitempty"`
+        } `json:"virtual_links"`
+}
+
+// SetCreationTimeAttributes sets the ID, creation timestamp and initial status
+func (v *Vnfd) SetCreationTimeAttributes() <span class="cov0" title="0">{
+        id := uuid.NewV4()
+        v.CreatedAt = time.Now().Format(time.RFC3339)
+        v.ID = IDPrefix + id.String()
+        v.Status = Available
+}</span>
+
+// PaginatedVnfds Struct for holding paginated Vnfd responses
+type PaginatedVnfds struct {
+        Limit      int    `json:"limit" binding:"required,min=1,max=10"`
+        TotalCount int    `json:"total_count" binding:"required,gte=0"`
+        First      *Link  `json:"first" binding:"required"`
+        Next       *Link  `json:"next,omitempty"`
+        Vnfds      []Vnfd `json:"vnfds,omitempty"`
+}
+
+// VnfdService defines methods that implement the VnfdService interface
+type VnfdService interface {
+        CreateVnfd(v *Vnfd) error
+        GetByVnfdname(vnfdname string) (*Vnfd, error)
+        GetByVnfdID(vnfdID string) (*Vnfd, error)
+        GetVnfds(start string, limit int) (PaginatedVnfds, error)
+        GetInputParamsSchemaForVnfd(vnfdjson []byte) ([]byte, error)
+        GetHealth() string
+        //GetReadiness() (string)
+}
+
+/*
+// Refer https://www.sohamkamani.com/blog/golang/2018-07-19-golang-omitempty/
+// for the reason Vdus, Constraints, HA, ScaleInOut, VLs are declared as pointers
+type Vnfd struct {
+        ID                         string                         `json:"id,omitempty"`
+        Name                string                        `json:"name"`
+        Status                string                        `json:"status"`
+        CreatedAt        string                        `json:"created_at"`
+        Vdus []*struct {
+                Constraints *struct {
+                        Dedicated  string `json:"dedicated,omitempty"`
+                        Vim_ID     string `json:"vim_id,omitempty"`
+                } `json:"constraints,omitempty"`
+                DiskSize                 string `json:"disk_size"`
+                High_Availability         *string `json:"high_availability,omitempty"`
+                Image                    string `json:"image"`
+                Memory                   string `json:"memory"`
+                Name                     string `json:"name"`
+                Scale_In_Out       *struct {
+                        Default string `json:"default"`
+                        Maximum string `json:"maximum"`
+                        Minimum string `json:"minimum"`
+                } `json:"scale_in_out,omitempty"`
+                Vcpus string `json:"vcpus"`
+                Vnfcs []struct {
+                        Connection_Points []struct {
+                                IP_Address           string   `json:"ip_address"`
+                                Name                 string   `json:"name"`
+                                VirtualLinkReference []string `json:"virtualLinkReference"`
+                        } `json:"connection_points"`
+                        Name string `json:"name"`
+                } `json:"vnfcs"`
+        } `json:"vdus"`
+        VirtualLink []*struct {
+                Name                         string                 `json:"name"`
+                Is_management         bool                `json:"is_management,omitempty"`
+        } `json:"virtual_links"`
+}
+*/
+
+/*
+type Constraint struct {
+        Dedicated  string `json:"dedicated,omitempty"`
+        Vim_ID     string `json:"vim_id,omitempty"`
+}
+
+type ScaleInOut struct {
+        Default string `json:"default"`
+        Maximum string `json:"maximum"`
+        Minimum string `json:"minimum"`
+}
+
+type ConnectionPoint struct {
+        IP_Address           string   `json:"ip_address"`
+        Name                 string   `json:"name"`
+        VirtualLinkReference []string `json:"virtualLinkReference"`
+}
+
+type Vnfc struct {
+        Connection_Points []ConnectionPoint `json:"connection_points"`
+        Name string `json:"name"`
+}
+
+type Vdu struct {
+        Constraints                 *Constraint `json:"constraints,omitempty"`
+        DiskSize                 string `json:"disk_size"`
+        High_Availability         *string `json:"high_availability,omitempty"`
+        Image                    string `json:"image"`
+        Memory                   string `json:"memory"`
+        Name                     string `json:"name"`
+        Scale_In_Out       *ScaleInOut `json:"scale_in_out,omitempty"`
+        Vcpus                                 string `json:"vcpus"`
+        Vnfcs                                 []Vnfc `json:"vnfcs"`
+}
+
+type VirtualLink struct {
+        Name                         string                 `json:"name"`
+        Is_management         bool                `json:"is_management,omitempty"`
+}
+
+// Refer https://www.sohamkamani.com/blog/golang/2018-07-19-golang-omitempty/
+// for the reason Vdus, Constraints, HA, ScaleInOut, VLs are declared as pointers
+type Vnfd struct {
+        ID                         string                         `json:"id,omitempty"`
+        Name                string                        `json:"name"`
+        Status                string                        `json:"status"`
+        CreatedAt        string                        `json:"created_at"`
+        Vdus                 []*Vdu                         `json:"vdus"`
+        VirtualLink []*VirtualLink `json:"virtual_links"`
+}*/
+</pre>
+		
+		<pre class="file" id="file2" style="display: none">package utils
+
+import (
+        "fmt"
+        "io/ioutil"
+        "os"
+        "path/filepath"
+        "runtime"
+        "strings"
+
+        "github.com/ghodss/yaml"
+
+        log "github.com/sirupsen/logrus"
+        json_schema_val "github.com/vishwanathj/JSON-Parameterized-Data-Validator/pkg/jsondatavalidator"
+)
+
+// SchemaDir points to the relative path of where the schema files are located
+var SchemaDir string
+
+// SchemaInputPath is path to schema file for
+// Parameterized templates
+var SchemaInputPath string
+
+// SchemaParameterizedInstanceRelPath is path to schema file for
+// instantiated Parameterized templates
+var SchemaParameterizedInstanceRelPath string
+
+// SchemaPaginatedInstancesRelPath is path to schema file
+// for paginated output structure
+var SchemaPaginatedInstancesRelPath string
+
+// SchemaFileInputParam is name of schema file for input param files
+var SchemaFileInputParam string
+
+// SchemaFileDefineNonParam is name of schema file for non-parameterized templates.
+// This is needed by the GenerateJSONSchemaFromParameterizedTemplate function
+var SchemaFileDefineNonParam string
+
+func init() <span class="cov8" title="1">{
+        log.Debug()
+        localUnitTest := os.Getenv("TEST")
+        log.Debug(localUnitTest)
+
+        if localUnitTest == "true" </span><span class="cov8" title="1">{
+                SchemaDir = "../schema/"
+                SchemaInputPath = "../schema/vnfdInputSchema.json#/vnfdInput"
+                SchemaParameterizedInstanceRelPath = "../schema/vnfdInstanceSchema.json#/vnfdInstance"
+                SchemaPaginatedInstancesRelPath = "../schema/vnfdPaginatedInstanceSchema.json#/vnfdsPaginatedInstances"
+                SchemaFileInputParam = "inputParam.json"
+                SchemaFileDefineNonParam = "vnfdDefineNonParam.json"
+        }</span> else<span class="cov0" title="0"> {
+                SchemaDir = "/usr/share/vnfdservice/schema/"
+                SchemaInputPath = "/usr/share/vnfdservice/schema/vnfdInputSchema.json#/vnfdInput"
+                SchemaParameterizedInstanceRelPath = "/usr/share/vnfdservice/schema/vnfdInstanceSchema.json#/vnfdInstance"
+                SchemaPaginatedInstancesRelPath = "/usr/share/vnfdservice/schema/vnfdPaginatedInstanceSchema.json#/vnfdsPaginatedInstances"
+                SchemaFileInputParam = "inputParam.json"
+                SchemaFileDefineNonParam = "vnfdDefineNonParam.json"
+        }</span>
+}
+
+// ValidateVnfdPostBody validates the given JSON body against the parameterized
+// VNFD Input JSON schema "parameterizedVnfdInputSchema.json" for compliance
+func ValidateVnfdPostBody(body []byte) error <span class="cov8" title="1">{
+        log.Debug()
+        var schemaText = GetSchemaStringWhenGivenFilePath(SchemaInputPath)
+        ioReaderObj := strings.NewReader(schemaText)
+        return json_schema_val.ValidateJSONBufAgainstSchema(body, ioReaderObj, "vnfdPostBody.json")
+}</span>
+
+// ValidateVnfdInstanceBody validates the given JSON body against the parameterized
+// VNFD Instance JSON schema "parameterizedVnfdInstanceSchema.json" for compliance
+func ValidateVnfdInstanceBody(jsonval []byte) error <span class="cov8" title="1">{
+        log.Debug()
+        var schemaText = GetSchemaStringWhenGivenFilePath(SchemaParameterizedInstanceRelPath)
+        ioReaderObj := strings.NewReader(schemaText)
+        return json_schema_val.ValidateJSONBufAgainstSchema(jsonval, ioReaderObj, "vnfdInstanceBody.json")
+}</span>
+
+// ValidatePaginatedVnfdsInstancesBody validates that JSON body returning the
+// Vnfds adhere to the pagination format
+func ValidatePaginatedVnfdsInstancesBody(jsonval []byte) error <span class="cov8" title="1">{
+        log.Debug()
+        var schemaText = GetSchemaStringWhenGivenFilePath(SchemaPaginatedInstancesRelPath)
+        ioReaderObj := strings.NewReader(schemaText)
+        return json_schema_val.ValidateJSONBufAgainstSchema(jsonval, ioReaderObj, "vnfdsPaginatedInstancesBody.json")
+}</span>
+
+// ValidateInputParamAgainstParameterizedVnfd validates the given "input_param"
+// JSON file against the dynamically generated JSON Schema
+func ValidateInputParamAgainstParameterizedVnfd(inputParamJSON []byte,
+        parameterizedVnfdJSON []byte) error <span class="cov8" title="1">{
+        log.Debug()
+        inputParamDynSchema, e := GenerateJSONSchemaFromParameterizedTemplate(parameterizedVnfdJSON)
+        if e != nil </span><span class="cov0" title="0">{
+                return e
+        }</span>
+        <span class="cov8" title="1">data, e := yaml.YAMLToJSON(inputParamDynSchema)
+        if e != nil </span><span class="cov0" title="0">{
+                return e
+        }</span>
+        <span class="cov8" title="1">fmt.Println(string(data))
+
+        return json_schema_val.ValidateJSONBufAgainstSchema(inputParamJSON, strings.NewReader(string(data)), "inputParam.json")</span>
+
+}
+
+// GenerateJSONSchemaFromParameterizedTemplate generated a dynamic schema
+// by parsing the template for parameterized variables and looking up
+// allowable values for those parameterized variables.
+func GenerateJSONSchemaFromParameterizedTemplate(parameterizedJSON []byte) ([]byte, error) <span class="cov8" title="1">{
+        abspath := GetAbsDIRPathGivenRelativePath(SchemaDir) + "/" + SchemaFileDefineNonParam
+        nonParamDefineJSONBuf, err := GetSchemaDefinitionFileAsJSONBuf(abspath)
+        if err != nil </span><span class="cov0" title="0">{
+                return nil, err
+        }</span>
+
+        <span class="cov8" title="1">abspath = GetAbsDIRPathGivenRelativePath(SchemaDir) + "/" + SchemaFileInputParam
+        inputParamSchemaJSONBuf, err := GetSchemaDefinitionFileAsJSONBuf(abspath)
+        //inputParamSchemaJSONBuf, err := GetSchemaDefinitionFileAsJSONBuf(SchemaFileInputParam)
+        if err != nil </span><span class="cov0" title="0">{
+                return nil, err
+        }</span>
+
+        <span class="cov8" title="1">return json_schema_val.GenerateJSONSchemaFromParameterizedTemplate(parameterizedJSON, nonParamDefineJSONBuf, inputParamSchemaJSONBuf, []string{"vnfd_id", "name"}, `\${1}(.*)`)</span>
+        //return json_schema_val.GenerateJSONSchemaFromParameterizedTemplate(parameterizedJSON, nonParamDefineJSONBuf, inputParamSchemaJSONBuf, []string{"vnfd_id", "name"}, `.*\$.*`)
+}
+
+// GetAbsDIRPathGivenRelativePath returns the absolute path on the file system given the
+// relative path from where this function resides
+func GetAbsDIRPathGivenRelativePath(relpath string) string <span class="cov8" title="1">{
+        log.Debug()
+        _, fname, _, _ := runtime.Caller(0)
+        var path string
+        if strings.HasPrefix(relpath, "../") </span><span class="cov8" title="1">{
+                path = filepath.Join(filepath.Dir(fname), relpath)
+        }</span> else<span class="cov0" title="0"> {
+                path = relpath
+        }</span>
+        <span class="cov8" title="1">return path</span>
+}
+
+// GetSchemaStringWhenGivenFilePath generates a string that needs to
+// be passed to the schema validator method when compiling a json schema
+func GetSchemaStringWhenGivenFilePath(relativePathOfJSONSchemaFile string) string <span class="cov8" title="1">{
+        log.Debug()
+        _, fname, _, _ := runtime.Caller(0)
+        var path string
+        if strings.HasPrefix(relativePathOfJSONSchemaFile, "../") </span><span class="cov8" title="1">{
+                path = filepath.Join(filepath.Dir(fname), relativePathOfJSONSchemaFile)
+        }</span> else<span class="cov0" title="0"> {
+                path = relativePathOfJSONSchemaFile
+        }</span>
+
+        <span class="cov8" title="1">var schemaText = `{"$ref": "` + path + `"}`
+        log.Debug(schemaText)
+        return schemaText</span>
+}
+
+// GetSchemaDefinitionFileAsJSONBuf reads a Schema file and returns JSON buf
+func GetSchemaDefinitionFileAsJSONBuf(schemaFileName string) ([]byte, error) <span class="cov8" title="1">{
+        log.Debug()
+        //bpath := GetAbsDIRPathGivenRelativePath(SchemaDir)
+        //yamlText, err := ioutil.ReadFile(bpath + "/" + schemaFileName)
+        yamlText, err := ioutil.ReadFile(schemaFileName)
+
+        if err != nil </span><span class="cov0" title="0">{
+                log.Error(err)
+                return nil, err
+        }</span>
+
+        <span class="cov8" title="1">var m map[string]interface{}
+        err = yaml.Unmarshal(yamlText, &amp;m)
+        log.Debug(string(yamlText), err)
+
+        return yamlText, err</span>
+}
+</pre>
+		
+		</div>
+	</body>
+	<script>
+	(function() {
+		var files = document.getElementById('files');
+		var visible;
+		files.addEventListener('change', onChange, false);
+		function select(part) {
+			if (visible)
+				visible.style.display = 'none';
+			visible = document.getElementById(part);
+			if (!visible)
+				return;
+			files.value = part;
+			visible.style.display = 'block';
+			location.hash = part;
+		}
+		function onChange() {
+			select(files.value);
+			window.scrollTo(0, 0);
+		}
+		if (location.hash != "") {
+			select(location.hash.substr(1));
+		}
+		if (!visible) {
+			select("file0");
+		}
+	})();
+	</script>
+</html>

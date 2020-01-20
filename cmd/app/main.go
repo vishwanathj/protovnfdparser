@@ -1,13 +1,13 @@
 package main
 
 import (
-	"flag"
 	"fmt"
 	"io"
 	"os"
 
+	"github.com/vishwanathj/protovnfdparser/pkg/config"
+
 	log "github.com/sirupsen/logrus"
-	"github.com/vishwanathj/protovnfdparser/pkg/mongo"
 	"github.com/vishwanathj/protovnfdparser/pkg/server"
 	"github.com/vishwanathj/protovnfdparser/pkg/service"
 	//"log"
@@ -38,42 +38,14 @@ func init() {
 	log.SetReportCaller(true)
 }
 
-const (
-	mongoIP   = "localhost"
-	mongoPort = 27017
-	dbName    = "go_web_server"
-	collName  = "vnfd"
-)
-
-var mgoIPPtr = flag.String("ip", mongoIP, "hostname or IP address")
-var mgoPortPtr = flag.Int("port", mongoPort, "mongodb port number")
-var mgoDbName = flag.String("dbname", dbName, "name of database")
-var mgoCollName = flag.String("coll", collName, "collection name")
-
 func main() {
-	//mgoIPPtr := flag.String("ip", mongoIP, "hostname or IP address")
-	//mgoPortPtr := flag.Int("port", mongoPort, "mongodb port number")
-	//mgoDbName := flag.String("dbname", dbName, "name of database")
-	//mgoCollName := flag.String("coll", collName, "collection name")
-	flag.Parse()
-
-	log.WithFields(log.Fields{
-		"MongoDB_IP":    *mgoIPPtr,
-		"MongoPort":     *mgoPortPtr,
-		"MongoDB_Name":  *mgoDbName,
-		"MongoCollName": *mgoCollName,
-	}).Info("App startup parameters")
-	//log.Info(*mgoIPPtr, *mgoPortPtr, *mgoDbName, *mgoCollName)
-	//fmt.Println(mgoCollName, mgoDbName)
-
-	dbURI := fmt.Sprintf("%s:%d", *mgoIPPtr, *mgoPortPtr)
-	d, err := mongo.NewMongoDAL(dbURI, dbName, collName)
+	cfg := config.GetConfigInstance()
+	v, err := service.GetVnfdServiceInstance(*cfg)
 	if err != nil {
-		log.Fatal("unable to connect to mongodb")
-		log.Debug(err)
+		log.Error(err)
+		panic(err)
 	}
-	v := service.NewVnfdService(d)
-	s := server.NewServer(v, nil)
+	s := server.NewServer(v, cfg.WebConfig)
 
 	s.Start()
 }

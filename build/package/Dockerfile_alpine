@@ -1,6 +1,6 @@
 FROM golang:1.11.2 as builder
 
-WORKDIR /go/src/github.com/vishwanathj/golangexercises/go_web_server
+WORKDIR /go/src/github.com/vishwanathj/protovnfdparser
 
 ADD ./ /go/src/github.com/vishwanathj/protovnfdparser/
 

@@ -1,16 +1,11 @@
 package models
 
 import (
+	"github.com/vishwanathj/protovnfdparser/pkg/constants"
 	"time"
 
 	"github.com/satori/go.uuid"
 )
-
-// IDPrefix VNFD ID prefix
-const IDPrefix = "VNFD-"
-
-// Available the vnfd status at creation time
-const Available = "available"
 
 // Vnfd Struct for holding Vnfd data
 // Refer https://www.sohamkamani.com/blog/golang/2018-07-19-golang-omitempty/
@@ -58,17 +53,8 @@ type Vnfd struct {
 func (v *Vnfd) SetCreationTimeAttributes() {
 	id := uuid.NewV4()
 	v.CreatedAt = time.Now().Format(time.RFC3339)
-	v.ID = IDPrefix + id.String()
-	v.Status = Available
-}
-
-// PaginatedVnfds Struct for holding paginated Vnfd responses
-type PaginatedVnfds struct {
-	Limit      int    `json:"limit" binding:"required,min=1,max=10"`
-	TotalCount int    `json:"total_count" binding:"required,gte=0"`
-	First      *Link  `json:"first" binding:"required"`
-	Next       *Link  `json:"next,omitempty"`
-	Vnfds      []Vnfd `json:"vnfds,omitempty"`
+	v.ID = constants.VnfdIDPrefix + id.String()
+	v.Status = constants.Available
 }
 
 // VnfdService defines methods that implement the VnfdService interface

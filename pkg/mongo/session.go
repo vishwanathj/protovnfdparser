@@ -11,7 +11,6 @@ type Session struct {
 
 // NewSession creates a new mongo session give host and port
 func NewSession(url string) (*Session, error) {
-	//session, err := mgo.Dial("localhost:27017")
 	session, err := mgo.Dial(url)
 	if err != nil {
 		return nil, err

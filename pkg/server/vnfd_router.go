@@ -4,12 +4,12 @@ import (
 	"bytes"
 	"encoding/json"
 	"errors"
+	"github.com/vishwanathj/protovnfdparser/pkg/constants"
 
 	"github.com/gorilla/mux"
 	log "github.com/sirupsen/logrus"
-	"github.com/vishwanathj/protovnfdparser/pkg/dataaccess"
 	"github.com/vishwanathj/protovnfdparser/pkg/models"
-	utils "github.com/vishwanathj/protovnfdparser/pkg/utils"
+	"github.com/vishwanathj/protovnfdparser/pkg/utils"
 	//utils "github.com/vishwanathj/JSON-Parameterized-Data-Validator/pkg/jsondatavalidator"
 	"io/ioutil"
 	"net/http"
@@ -19,18 +19,14 @@ import (
 	"gopkg.in/yaml.v2"
 )
 
-// VnfdIDPattern regexp pattern for the VnfdId
-const VnfdIDPattern = "^VNFD-[a-fA-F0-9]{8}-[a-fA-F0-9]{4}-[a-fA-F0-9]{4}-[a-fA-F0-9]{4}-[a-fA-F0-9]{12}$"
-
 type vnfdRouter struct {
 	vnfdService models.VnfdService
-	dalService  dataaccess.DataAccessLayer
 }
 
 // NewVnfdRouter creates a new mux router
-func NewVnfdRouter(v models.VnfdService, d dataaccess.DataAccessLayer, router *mux.Router) *mux.Router {
+func NewVnfdRouter(v models.VnfdService, router *mux.Router) *mux.Router {
 	log.Debug()
-	vnfdRouter := vnfdRouter{v, d}
+	vnfdRouter := vnfdRouter{v}
 
 	/*router.HandleFunc("", vnfdRouter.createVnfdHandler).Methods("POST")
 	router.HandleFunc("", vnfdRouter.getVnfdsHandler).Methods("GET")
@@ -46,7 +42,7 @@ func NewVnfdRouter(v models.VnfdService, d dataaccess.DataAccessLayer, router *m
 	return router
 }
 
-func (ur *vnfdRouter) createVnfdHandler(w http.ResponseWriter, r *http.Request) {
+func (vr *vnfdRouter) createVnfdHandler(w http.ResponseWriter, r *http.Request) {
 	log.Debug()
 	body, err := ioutil.ReadAll(r.Body)
 	if err != nil {
@@ -73,7 +69,7 @@ func (ur *vnfdRouter) createVnfdHandler(w http.ResponseWriter, r *http.Request) 
 		return
 	}
 
-	err = ur.vnfdService.CreateVnfd(&vnfd)
+	err = vr.vnfdService.CreateVnfd(&vnfd)
 	if err != nil {
 		log.WithFields(log.Fields{"CreateVnfdErr": err}).Error()
 		Error(w, http.StatusConflict, err.Error())
@@ -83,21 +79,30 @@ func (ur *vnfdRouter) createVnfdHandler(w http.ResponseWriter, r *http.Request) 
 	JSON(w, http.StatusOK, err)
 }
 
-func (ur *vnfdRouter) getVnfdsHandler(w http.ResponseWriter, r *http.Request) {
+func (vr *vnfdRouter) getVnfdsHandler(w http.ResponseWriter, r *http.Request) {
 	log.Debug()
 	vars := r.URL.Query()
-	start := vars.Get("start")
-	limit := vars.Get("limit")
+	//start := vars.Get("start")
+	//limit := vars.Get("limit")
+	start := vars.Get(constants.PaginationURLStart)
+	limit := vars.Get(constants.PaginationURLLimit)
+	//sort := vars.Get(constants.PaginationURLSort)
 
 	log.WithFields(log.Fields{"LIMIT": limit, "START": start}).Debug("Inputs received from end user")
 
-	l, err := strconv.Atoi(limit)
-	if err != nil || l <= 0 || l > models.MaxLimit || l < models.MinLimit {
-		l = models.DefaultLimit
-		log.Debug("DefaultLimit being used instead of user provided input")
+	var l int
+	var err error
+	if len(limit) == 0 {
+		l = 0
+	} else {
+		l, err = strconv.Atoi(limit)
+		if err != nil {
+			Error(w, http.StatusBadRequest, err.Error())
+			return
+		}
 	}
 
-	vnfds, err := ur.vnfdService.GetVnfds(start, l)
+	vnfds, err := vr.vnfdService.GetVnfds(start, l)
 	if err != nil {
 		Error(w, http.StatusBadRequest, err.Error())
 		return
@@ -106,21 +111,21 @@ func (ur *vnfdRouter) getVnfdsHandler(w http.ResponseWriter, r *http.Request) {
 	JSON(w, http.StatusOK, vnfds)
 }
 
-func (ur *vnfdRouter) getVnfdHandler(w http.ResponseWriter, r *http.Request) {
+func (vr *vnfdRouter) getVnfdHandler(w http.ResponseWriter, r *http.Request) {
 	log.Debug()
 	vars := mux.Vars(r)
 	vnfdname := vars["name"]
 
-	validVnfdID := regexp.MustCompile(VnfdIDPattern)
+	validVnfdID := regexp.MustCompile(constants.VnfdIDPattern)
 	if validVnfdID.MatchString(vnfdname) {
-		vnfd, err := ur.vnfdService.GetByVnfdID(vnfdname)
+		vnfd, err := vr.vnfdService.GetByVnfdID(vnfdname)
 		if err != nil {
 			Error(w, http.StatusNotFound, err.Error())
 			return
 		}
 		JSON(w, http.StatusOK, vnfd)
 	} else {
-		vnfd, err := ur.vnfdService.GetByVnfdname(vnfdname)
+		vnfd, err := vr.vnfdService.GetByVnfdname(vnfdname)
 		if err != nil {
 			Error(w, http.StatusNotFound, err.Error())
 			return
@@ -129,7 +134,7 @@ func (ur *vnfdRouter) getVnfdHandler(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-func (ur *vnfdRouter) getVnfdInputParamsSchemaHandler(w http.ResponseWriter, r *http.Request) {
+func (vr *vnfdRouter) getVnfdInputParamsSchemaHandler(w http.ResponseWriter, r *http.Request) {
 	log.Debug()
 	vars := mux.Vars(r)
 	vnfdname := vars["name"]
@@ -139,11 +144,11 @@ func (ur *vnfdRouter) getVnfdInputParamsSchemaHandler(w http.ResponseWriter, r *
 	var jsonval []byte
 	var inputparam []byte
 
-	validVnfdID := regexp.MustCompile(VnfdIDPattern)
+	validVnfdID := regexp.MustCompile(constants.VnfdIDPattern)
 	if validVnfdID.MatchString(vnfdname) {
-		vnfd, err = ur.vnfdService.GetByVnfdID(vnfdname)
+		vnfd, err = vr.vnfdService.GetByVnfdID(vnfdname)
 	} else {
-		vnfd, err = ur.vnfdService.GetByVnfdname(vnfdname)
+		vnfd, err = vr.vnfdService.GetByVnfdname(vnfdname)
 	}
 
 	if err != nil {
@@ -155,7 +160,7 @@ func (ur *vnfdRouter) getVnfdInputParamsSchemaHandler(w http.ResponseWriter, r *
 		Error(w, http.StatusInternalServerError, err.Error())
 		return
 	}
-	inputparam, err = ur.vnfdService.GetInputParamsSchemaForVnfd(jsonval)
+	inputparam, err = vr.vnfdService.GetInputParamsSchemaForVnfd(jsonval)
 	if err != nil {
 		Error(w, http.StatusInternalServerError, err.Error())
 		return
@@ -173,9 +178,9 @@ func (ur *vnfdRouter) getVnfdInputParamsSchemaHandler(w http.ResponseWriter, r *
 	JSON(w, http.StatusOK, res)
 }
 
-func (ur *vnfdRouter) livenessProbe(w http.ResponseWriter, r *http.Request) {
+func (vr *vnfdRouter) livenessProbe(w http.ResponseWriter, r *http.Request) {
 	log.Debug()
-	JSON(w, http.StatusOK, ur.vnfdService.GetHealth())
+	JSON(w, http.StatusOK, vr.vnfdService.GetHealth())
 }
 
 /*func (ur *vnfdRouter) readinessProbe(w http.ResponseWriter, r *http.Request) {

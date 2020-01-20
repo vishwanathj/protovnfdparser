@@ -8,9 +8,9 @@ import (
 	"encoding/json"
 	"fmt"
 	"log"
-	"os"
-	"strconv"
 	"testing"
+
+	"github.com/vishwanathj/protovnfdparser/pkg/config"
 
 	"github.com/vishwanathj/protovnfdparser/pkg/models"
 	"github.com/vishwanathj/protovnfdparser/pkg/service"
@@ -19,22 +19,16 @@ import (
 	"github.com/vishwanathj/protovnfdparser/pkg/mongo"
 )
 
-var mongoUrl = ""
-
-const (
-	dbName             = "test_db"
-	vnfdCollectionName = "vnfd"
-	envMongoIP         = "mongoIP"
-	envMongoPort       = "mongoPort"
-)
+var mongoUrl string
+var dbName string
+var vnfdCollectionName string
+var testcfg = config.GetConfigInstance()
 
 func init() {
-	//mongoUrl = fmt.Sprintf("%s:%d", *mgoIpPtr, *mgoPortPtr)
-	port, err := strconv.Atoi(os.Getenv(envMongoPort))
-	if err != nil {
-		port = 27017
-	}
-	mongoUrl = fmt.Sprintf("%s:%d", os.Getenv(envMongoIP), port)
+	dbName = testcfg.MongoDBConfig.MongoDBName
+	vnfdCollectionName = testcfg.MongoDBConfig.MongoColName
+	mongoUrl = fmt.Sprintf("%s:%d", testcfg.MongoDBConfig.MongoIP, testcfg.MongoDBConfig.MongoPort)
+
 }
 
 var createVnfdObj = []byte(`{
@@ -238,7 +232,6 @@ func TestVnfdService(t *testing.T) {
 }
 
 func getVnfds(t *testing.T) {
-	//mongoUrl := fmt.Sprintf("%s:%d", *mgoIpPtr, *mgoPortPtr)
 	session, err := mongo.NewSession(mongoUrl)
 	if err != nil {
 		log.Fatalf("Unable to connect to mongo: %s", err)
@@ -248,9 +241,11 @@ func getVnfds(t *testing.T) {
 		session.Close()
 	}()
 
-	//First, validate when the database has no vnfds collection
-	dal, err := mongo.NewMongoDAL(mongoUrl, dbName, vnfdCollectionName)
-	vnfdService := service.NewVnfdService(dal)
+	vnfdService, err := service.GetVnfdServiceInstance(*testcfg)
+	if err != nil {
+		panic(err)
+		t.Fail()
+	}
 	pvnfds, err := vnfdService.GetVnfds("", 1)
 	if pvnfds.Vnfds == nil && pvnfds.Next == nil &&
 		pvnfds.TotalCount == 0 && pvnfds.Limit == 1 && pvnfds.First != nil {
@@ -289,9 +284,11 @@ func getVnfdsFail(t *testing.T) {
 		session.Close()
 	}()
 
-	//First, validate when the database has no vnfds collection
-	dal, err := mongo.NewMongoDAL(mongoUrl, dbName, vnfdCollectionName)
-	vnfdService := service.NewVnfdService(dal)
+	vnfdService, err := service.GetVnfdServiceInstance(*testcfg)
+	if err != nil {
+		panic(err)
+		t.Fail()
+	}
 	pvnfds, err := vnfdService.GetVnfds("", 1)
 	if pvnfds.Vnfds == nil && pvnfds.Next == nil &&
 		pvnfds.TotalCount == 0 && pvnfds.Limit == 1 && pvnfds.First != nil {
@@ -342,8 +339,11 @@ func getByVnfdID(t *testing.T) {
 		t.Fatal()
 	}
 
-	dal, err := mongo.NewMongoDAL(mongoUrl, dbName, vnfdCollectionName)
-	vnfdService := service.NewVnfdService(dal)
+	vnfdService, err := service.GetVnfdServiceInstance(*testcfg)
+	if err != nil {
+		panic(err)
+		t.Fail()
+	}
 	testVnfdID := "VNFD-50c270ff-47c4-4d66-8a6f-f24de7638451"
 
 	obj, err := vnfdService.GetByVnfdID(testVnfdID)
@@ -376,8 +376,11 @@ func getByVnfdIDFail(t *testing.T) {
 		t.Fatal()
 	}
 
-	dal, err := mongo.NewMongoDAL(mongoUrl, dbName, vnfdCollectionName)
-	vnfdService := service.NewVnfdService(dal)
+	vnfdService, err := service.GetVnfdServiceInstance(*testcfg)
+	if err != nil {
+		panic(err)
+		t.Fail()
+	}
 	testVnfdID := "VNFD-50c270ff-47c4-4d66-8a6f-f24de7638461"
 
 	obj, err := vnfdService.GetByVnfdID(testVnfdID)
@@ -412,8 +415,11 @@ func getVnfdByName(t *testing.T) {
 		t.Fatal()
 	}
 
-	dal, err := mongo.NewMongoDAL(mongoUrl, dbName, vnfdCollectionName)
-	vnfdService := service.NewVnfdService(dal)
+	vnfdService, err := service.GetVnfdServiceInstance(*testcfg)
+	if err != nil {
+		panic(err)
+		t.Fail()
+	}
 	testVnfdName := "vnfdOptProps"
 
 	obj, err := vnfdService.GetByVnfdname(testVnfdName)
@@ -435,11 +441,11 @@ func createVnfd_single_vnfd_insert_for_get_test(t *testing.T) {
 		session.DropDatabase(dbName)
 		session.Close()
 	}()
-	dal, err := mongo.NewMongoDAL(mongoUrl, dbName, vnfdCollectionName)
+
+	vnfdService, err := service.GetVnfdServiceInstance(*testcfg)
 	if err != nil {
 		t.Fatal("Failed to create dataacess layer object")
 	}
-	vnfdService := service.NewVnfdService(dal)
 
 	testVnfdname := "vnfname"
 

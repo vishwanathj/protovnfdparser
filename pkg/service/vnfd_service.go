@@ -2,21 +2,36 @@ package service
 
 import (
 	"encoding/json"
+	"sync"
 
 	log "github.com/sirupsen/logrus"
+
+	"github.com/vishwanathj/protovnfdparser/pkg/config"
+	"github.com/vishwanathj/protovnfdparser/pkg/constants"
 	"github.com/vishwanathj/protovnfdparser/pkg/dataaccess"
 	"github.com/vishwanathj/protovnfdparser/pkg/models"
+	"github.com/vishwanathj/protovnfdparser/pkg/mongo"
 	"github.com/vishwanathj/protovnfdparser/pkg/utils"
 )
 
-const vnfdID = "vnfd_id"
-
 type VnfdSvc struct {
-	dal dataaccess.DataAccessLayer
+	dal dataaccess.VnfdRepository
+	cfg config.Config
 }
 
-func NewVnfdService(d dataaccess.DataAccessLayer) *VnfdSvc {
-	return &VnfdSvc{d}
+var svcInstance *VnfdSvc
+var once sync.Once
+
+// GetVnfdServiceInstance returns a singleton instance of VnfdSvc
+func GetVnfdServiceInstance(cfg config.Config) (*VnfdSvc, error) {
+	once.Do(func() {
+		d, err := mongo.NewMongoDAL(cfg)
+		if err != nil {
+			panic(err)
+		}
+		svcInstance = &VnfdSvc{d, cfg}
+	})
+	return svcInstance, nil
 }
 
 // CreateVnfd method that creates a new VNFD
@@ -87,19 +102,28 @@ func (p *VnfdSvc) GetByVnfdID(vnfdID string) (*models.Vnfd, error) {
 }
 
 // GetVnfds method that retrieves a paginated list of Vnfds
-func (p *VnfdSvc) GetVnfds(start string, limit int) (models.PaginatedVnfds, error) {
+func (p *VnfdSvc) GetVnfds(start string, limitinp int) (models.PaginatedVnfds, error) {
 	log.Debug()
 
-	//vnfds, err := p.dal.GetVnfdsPaginated(start, limit)
+	var limit int
+
+	if limitinp <= 0 || limitinp > p.cfg.PgntConfig.MaxLimit || limitinp < p.cfg.PgntConfig.MinLimit {
+		limit = p.cfg.PgntConfig.DefaultLimit
+		log.Debug("DefaultLimit being used instead of user provided input")
+	} else {
+		limit = limitinp
+	}
+
+	var res models.PaginatedVnfds
 	vnfds, count, err := p.dal.GetVnfds(start, limit)
 	log.WithFields(log.Fields{"VNFDS": vnfds}).Debug("GET_VNFDS")
 
-	var res models.PaginatedVnfds
 	if err != nil {
 		return res, err
 	}
 
-	// Below validates each item in array adheres to schema and has not been manually tampered with
+	// Below validates each item in array adheres to schema and has not been manually tampered in DB directly
+	// to be schema non-compliant
 	for i := 0; i < len(vnfds); i++ {
 		jsonval, err := json.Marshal(vnfds[i])
 		if err != nil {
@@ -113,14 +137,14 @@ func (p *VnfdSvc) GetVnfds(start string, limit int) (models.PaginatedVnfds, erro
 		}
 	}
 
+	pgnCfg := p.cfg.PgntConfig
 	if len(vnfds) == 0 || len(vnfds) < limit {
-		first := models.Link{Href: models.MakeFirstHref(limit, "/vnfds")}
-		//res = models.PaginatedVnfds{Limit: limit, TotalCount: count, First: &first, Next: nil, Vnfds: vnfds}
+		first := models.Link{Href: models.MakeFirstHref(*pgnCfg, limit, constants.ApiPathVnfds)}
 		res = models.PaginatedVnfds{Limit: limit, TotalCount: count, First: &first, Next: nil, Vnfds: vnfds}
 	} else {
 		//log.WithFields(log.Fields{"LAST": vnfds[limit-1].Name})
-		first := models.Link{Href: models.MakeFirstHref(limit, "/vnfds")}
-		next := models.Link{Href: models.MakeNextHref(limit, vnfds[limit-1].Name, "/vnfds")}
+		first := models.Link{Href: models.MakeFirstHref(*pgnCfg, limit, constants.ApiPathVnfds)}
+		next := models.Link{Href: models.MakeNextHref(*pgnCfg, limit, vnfds[limit-1].Name, constants.ApiPathVnfds)}
 		res = models.PaginatedVnfds{Limit: limit, TotalCount: count, First: &first, Next: &next, Vnfds: vnfds}
 	}
 

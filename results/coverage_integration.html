@@ -54,11 +54,11 @@
 			<div id="nav">
 				<select id="files">
 				
-				<option value="file0">github.com/vishwanathj/golangexercises/go_web_server/pkg/mongo/mgo_vnfd_model.go (100.0%)</option>
+				<option value="file0">github.com/vishwanathj/protovnfdparser/pkg/mongo/mgo_vnfd_model.go (100.0%)</option>
 				
-				<option value="file1">github.com/vishwanathj/golangexercises/go_web_server/pkg/mongo/mongodal.go (81.8%)</option>
+				<option value="file1">github.com/vishwanathj/protovnfdparser/pkg/mongo/mongodal.go (80.6%)</option>
 				
-				<option value="file2">github.com/vishwanathj/golangexercises/go_web_server/pkg/mongo/session.go (88.9%)</option>
+				<option value="file2">github.com/vishwanathj/protovnfdparser/pkg/mongo/session.go (88.9%)</option>
 				
 				</select>
 			</div>
@@ -75,7 +75,7 @@
 		<pre class="file" id="file0" style="display: none">package mongo
 
 import (
-        "github.com/vishwanathj/golangexercises/go_web_server/pkg/models"
+        "github.com/vishwanathj/protovnfdparser/pkg/models"
         "gopkg.in/mgo.v2"
 )
 
@@ -93,13 +93,13 @@ type vnfdMgoModel struct {
         Vdus       []*struct {
                 Constraints *struct {
                         Dedicated interface{} `json:"dedicated,omitempty"`
-                        Vim_ID    string `json:"vim_id,omitempty"`
+                        Vim_ID    string      `json:"vim_id,omitempty"`
                 } `json:"constraints,omitempty"`
-                Disk_Size          interface{}  `json:"disk_size"`
-                High_Availability *string `json:"high_availability,omitempty"`
-                Image             string  `json:"image"`
-                Memory            interface{}  `json:"memory"`
-                Name              string  `json:"name"`
+                Disk_Size         interface{} `json:"disk_size"`
+                High_Availability *string     `json:"high_availability,omitempty"`
+                Image             string      `json:"image"`
+                Memory            interface{} `json:"memory"`
+                Name              string      `json:"name"`
                 Scale_In_Out      *struct {
                         Default interface{} `json:"default"`
                         Maximum interface{} `json:"maximum"`
@@ -157,11 +157,15 @@ func toVnfdMgoModel(v *models.Vnfd) *vnfdMgoModel <span class="cov8" title="1">{
 		<pre class="file" id="file1" style="display: none">package mongo
 
 import (
-        "github.com/vishwanathj/golangexercises/go_web_server/pkg/dataaccess"
-        "github.com/vishwanathj/golangexercises/go_web_server/pkg/models"
+        "fmt"
+        "log"
+
+        "github.com/vishwanathj/protovnfdparser/pkg/config"
+
+        "github.com/vishwanathj/protovnfdparser/pkg/dataaccess"
+        "github.com/vishwanathj/protovnfdparser/pkg/models"
         "gopkg.in/mgo.v2"
         "gopkg.in/mgo.v2/bson"
-        "log"
 )
 
 // MongoDAL stores mongo collection
@@ -172,17 +176,21 @@ type MongoDAL struct {
 }
 
 // NewMongoDAL creates a new MongoDAL
-func NewMongoDAL(dbURI string, dbName string, collectionName string) (dataaccess.DataAccessLayer, error) <span class="cov8" title="1">{
+func NewMongoDAL(cfg config.Config) (dataaccess.VnfdRepository, error) <span class="cov8" title="1">{
+        if cfg.MongoDBConfig == nil </span><span class="cov0" title="0">{
+                panic("mongodb config missing")</span>
+        }
+        <span class="cov8" title="1">dbURI := fmt.Sprintf("%s:%d", cfg.MongoDBConfig.MongoIP, cfg.MongoDBConfig.MongoPort)
         ms, err := NewSession(dbURI)
         if err != nil </span><span class="cov0" title="0">{
                 log.Fatal("unable to connect to mongodb:", err)
         }</span>
 
-        <span class="cov8" title="1">collection := ms.GetCollection(dbName, collectionName)
+        <span class="cov8" title="1">collection := ms.GetCollection(cfg.MongoDBConfig.MongoDBName, cfg.MongoDBConfig.MongoColName)
         collection.EnsureIndex(vnfdMgoModelIndex())
         mongo := &amp;MongoDAL{
-                session: ms.session,
-                dbName:     dbName,
+                session:    ms.session,
+                dbName:     cfg.MongoDBConfig.MongoDBName,
                 collection: collection,
         }
         return mongo, nil</span>
@@ -198,7 +206,7 @@ func (m *MongoDAL) Insert(collectionName string, docs ...interface{}) error <spa
         return m.c(collectionName).Insert(docs)
 }</span>
 
-// Insert stores documents in mongo
+// InsertVnfd stores Vnfd documents in mongo
 func (m *MongoDAL) InsertVnfd(vnfd *models.Vnfd) error <span class="cov8" title="1">{
         // the conversion function below ensures that `_id` values is populated with `VNFD-{UUID} value`
         mgoModel := toVnfdMgoModel(vnfd)
@@ -267,7 +275,6 @@ type Session struct {
 
 // NewSession creates a new mongo session give host and port
 func NewSession(url string) (*Session, error) <span class="cov8" title="1">{
-        //session, err := mgo.Dial("localhost:27017")
         session, err := mgo.Dial(url)
         if err != nil </span><span class="cov8" title="1">{
                 return nil, err

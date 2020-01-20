@@ -2,59 +2,97 @@
 
 //https://stackoverflow.com/questions/25965584/separating-unit-tests-and-integration-tests-in-go
 
-package models
+package models_test
 
 import (
+	"fmt"
+	"github.com/vishwanathj/protovnfdparser/pkg/config"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/vishwanathj/protovnfdparser/pkg/models"
 )
 
+var testcfg = config.GetConfigInstance()
+
 func TestMakeFirstHref(t *testing.T) {
-	//c, _ := apitestutils.CreateTestContext("", nil, "")
-	r := MakeFirstHref(42, "/some/path/here")
-	assert.Equal(t, "http://localhost:8080/some/path/here?limit=42", r)
-}
-
-var flagtestsForTestMakeFirstHrefWhenQueryIsPassedIn = []struct {
-	limit       int
-	queryParams PaginationQueryParameters
-	expectedURL string
-}{
-	{10, PaginationQueryParameters{"name"}, "http://localhost:8080/some/path/here?limit=10"},
-	{10, PaginationQueryParameters{"created_at"}, "http://localhost:8080/some/path/here?limit=10&sort=created_at"},
-	{10, PaginationQueryParameters{}, "http://localhost:8080/some/path/here?limit=10"},
-}
-
-func TestMakeFirstHrefWhenQueryObjectIsPassedIn(t *testing.T) {
-	for _, testInput := range flagtestsForTestMakeFirstHrefWhenQueryIsPassedIn {
-		//c, _ := apitestutils.CreateTestContext("", nil, "")
-		r := MakeFirstHref(testInput.limit, "/some/path/here", testInput.queryParams)
-		assert.Equal(t, testInput.expectedURL, r)
+	pgCfg := testcfg.PgntConfig
+	baseURI := pgCfg.BaseURI
+	tests := []struct {
+		desc        string
+		limit       int
+		apipath     string
+		query       models.PaginationQueryParameters
+		expectedURL string
+	}{
+		{
+			desc:        "test with limit only and no query params",
+			limit:       42,
+			apipath:     "/api/v1/vnfds",
+			expectedURL: baseURI + "/api/v1/vnfds?limit=42",
+		},
+		{
+			desc:        "test with limit and `DefaultOrderBy` query",
+			limit:       10,
+			apipath:     "/api/v1/vnfds",
+			query:       models.PaginationQueryParameters{OrderBy: "name"},
+			expectedURL: baseURI + "/api/v1/vnfds?limit=10",
+		},
+		{
+			desc:        "test with limit and non ``DefaultOrderBy` query",
+			limit:       10,
+			apipath:     "/api/v1/vnfds",
+			query:       models.PaginationQueryParameters{OrderBy: "created_at"},
+			expectedURL: baseURI + "/api/v1/vnfds?limit=10&sort=created_at",
+		},
+	}
+	for i, tc := range tests {
+		t.Run(fmt.Sprintf("%d:%s", i, tc.desc), func(t *testing.T) {
+			r := models.MakeFirstHref(*pgCfg, tc.limit, tc.apipath, tc.query)
+			assert.Equal(t, tc.expectedURL, r)
+		})
 	}
 }
 
 func TestMakeNextHref(t *testing.T) {
-	//c, _ := apitestutils.CreateTestContext("", nil, "")
-	r := MakeNextHref(77, "starthere", "/some/path/here")
-	assert.Equal(t, "http://localhost:8080/some/path/here?start=starthere&limit=77", r)
-}
-
-var flagtestsForTestMakeNextHrefWhenQueryIsPassedIn = []struct {
-	limit       int
-	start       string
-	queryParams PaginationQueryParameters
-	expectedURL string
-}{
-	{10, "EXAMPLE-ID", PaginationQueryParameters{"name"}, "http://localhost:8080/some/path/here?start=EXAMPLE-ID&limit=10"},
-	{10, "EXAMPLE-ID", PaginationQueryParameters{"created_at"}, "http://localhost:8080/some/path/here?start=EXAMPLE-ID&limit=10&sort=created_at"},
-	{10, "EXAMPLE-ID", PaginationQueryParameters{}, "http://localhost:8080/some/path/here?start=EXAMPLE-ID&limit=10"},
-}
-
-func TestMakeNextHrefWhenQueryObjectIsPassedIn(t *testing.T) {
-	for _, testInput := range flagtestsForTestMakeNextHrefWhenQueryIsPassedIn {
-		//c, _ := apitestutils.CreateTestContext("", nil, "")
-		r := MakeNextHref(testInput.limit, testInput.start, "/some/path/here", testInput.queryParams)
-		assert.Equal(t, testInput.expectedURL, r)
+	pgCfg := testcfg.PgntConfig
+	baseURI := pgCfg.BaseURI
+	tests := []struct {
+		desc        string
+		limit       int
+		start       string
+		apipath     string
+		query       models.PaginationQueryParameters
+		expectedURL string
+	}{
+		{
+			desc:        "test with limit, start and no query params",
+			limit:       42,
+			start:       "EXAMPLE-ID",
+			apipath:     "/api/v1/vnfds",
+			expectedURL: baseURI + "/api/v1/vnfds?start=EXAMPLE-ID&limit=42",
+		},
+		{
+			desc:        "test with limit, start and `DefaultOrderBy` query",
+			limit:       10,
+			start:       "VNFD-NAME",
+			apipath:     "/api/v1/vnfds",
+			query:       models.PaginationQueryParameters{OrderBy: "name"},
+			expectedURL: baseURI + "/api/v1/vnfds?start=VNFD-NAME&limit=10",
+		},
+		{
+			desc:        "test with limit and non ``DefaultOrderBy` query",
+			limit:       10,
+			start:       "VNFD-ID",
+			apipath:     "/api/v1/vnfds",
+			query:       models.PaginationQueryParameters{OrderBy: "created_at"},
+			expectedURL: baseURI + "/api/v1/vnfds?start=VNFD-ID&limit=10&sort=created_at",
+		},
+	}
+	for i, tc := range tests {
+		t.Run(fmt.Sprintf("%d:%s", i, tc.desc), func(t *testing.T) {
+			r := models.MakeNextHref(*pgCfg, tc.limit, tc.start, tc.apipath, tc.query)
+			assert.Equal(t, tc.expectedURL, r)
+		})
 	}
 }
