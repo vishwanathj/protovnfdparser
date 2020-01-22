@@ -31,7 +31,11 @@ func NewMongoDAL(cfg config.Config) (dataaccess.VnfdRepository, error) {
 	}
 
 	collection := ms.GetCollection(cfg.MongoDBConfig.MongoDBName, cfg.MongoDBConfig.MongoColName)
-	collection.EnsureIndex(vnfdMgoModelIndex())
+	err = collection.EnsureIndex(vnfdMgoModelIndex())
+	if err != nil {
+		log.Fatal("collection.EnsureIndex failed")
+		panic(err)
+	}
 	mongo := &MongoDAL{
 		session:    ms.session,
 		dbName:     cfg.MongoDBConfig.MongoDBName,
@@ -59,7 +63,9 @@ func (m *MongoDAL) InsertVnfd(vnfd *models.Vnfd) error {
 
 func (m *MongoDAL) FindVnfdByID(vnfdID string) (*models.Vnfd, error) {
 	mgoModel := vnfdMgoModel{}
-	err := m.c("vnfd").Find(bson.M{VnfdID: vnfdID}).One(&mgoModel)
+	//err := m.c("vnfd").Find(bson.M{VnfdID: vnfdID}).One(&mgoModel)
+	collName := m.collection.Name
+	err := m.c(collName).Find(bson.M{VnfdID: vnfdID}).One(&mgoModel)
 	if err != nil {
 		//log.Error("Query Error:", err)
 		return nil, err
@@ -69,7 +75,8 @@ func (m *MongoDAL) FindVnfdByID(vnfdID string) (*models.Vnfd, error) {
 
 func (m *MongoDAL) FindVnfdByName(vnfdname string) (*models.Vnfd, error) {
 	mgoModel := vnfdMgoModel{}
-	err := m.c("vnfd").Find(bson.M{VnfdKey: vnfdname}).One(&mgoModel)
+	collName := m.collection.Name
+	err := m.c(collName).Find(bson.M{VnfdKey: vnfdname}).One(&mgoModel)
 	if err != nil {
 		//log.Error("Query Error:", err)
 		return nil, err
@@ -77,16 +84,21 @@ func (m *MongoDAL) FindVnfdByName(vnfdname string) (*models.Vnfd, error) {
 	return mgoModel.toModelVnfd(), err
 }
 
-func (m *MongoDAL) GetVnfds(start string, limit int) ([]models.Vnfd, int, error) {
+func (m *MongoDAL) GetVnfds(start string, limit int, sort string) ([]models.Vnfd, int, error) {
 	var vnfds []vnfdMgoModel
+	var err error
 
-	if start == "" {
-		m.collection.Find(bson.M{"name": bson.M{"$gt": ""}}).Limit(limit).All(&vnfds)
-		//p.collection.Find(nil).Limit(limit).All(&vnfds)
-	} else {
+	if len(sort) != 0 {
 		//https://gist.github.com/kkdai/813f1aaf7cd58487472a
 		//http://technotip.com/4101/string-comparison-mongodb/
-		m.collection.Find(bson.M{"name": bson.M{"$gt": start}}).Limit(limit).All(&vnfds)
+		err = m.collection.Find(bson.M{"name": bson.M{"$gt": start}}).Sort(sort).Limit(limit).All(&vnfds)
+	} else {
+		err = m.collection.Find(bson.M{"name": bson.M{"$gt": start}}).Limit(limit).All(&vnfds)
+	}
+
+	if err != nil {
+		log.Fatal(err)
+		panic(err)
 	}
 	//log.WithFields(log.Fields{"VNFDS": vnfds}).Debug("GET_VNFDS")
 

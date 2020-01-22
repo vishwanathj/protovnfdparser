@@ -6,8 +6,9 @@ package models_test
 
 import (
 	"fmt"
-	"github.com/vishwanathj/protovnfdparser/pkg/config"
 	"testing"
+
+	"github.com/vishwanathj/protovnfdparser/pkg/config"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/vishwanathj/protovnfdparser/pkg/models"
@@ -22,7 +23,7 @@ func TestMakeFirstHref(t *testing.T) {
 		desc        string
 		limit       int
 		apipath     string
-		query       models.PaginationQueryParameters
+		query       models.PgnQueryParams
 		expectedURL string
 	}{
 		{
@@ -35,14 +36,14 @@ func TestMakeFirstHref(t *testing.T) {
 			desc:        "test with limit and `DefaultOrderBy` query",
 			limit:       10,
 			apipath:     "/api/v1/vnfds",
-			query:       models.PaginationQueryParameters{OrderBy: "name"},
+			query:       models.PgnQueryParams{OrderBy: "name"},
 			expectedURL: baseURI + "/api/v1/vnfds?limit=10",
 		},
 		{
 			desc:        "test with limit and non ``DefaultOrderBy` query",
 			limit:       10,
 			apipath:     "/api/v1/vnfds",
-			query:       models.PaginationQueryParameters{OrderBy: "created_at"},
+			query:       models.PgnQueryParams{OrderBy: "created_at"},
 			expectedURL: baseURI + "/api/v1/vnfds?limit=10&sort=created_at",
 		},
 	}
@@ -62,7 +63,7 @@ func TestMakeNextHref(t *testing.T) {
 		limit       int
 		start       string
 		apipath     string
-		query       models.PaginationQueryParameters
+		query       models.PgnQueryParams
 		expectedURL string
 	}{
 		{
@@ -77,7 +78,7 @@ func TestMakeNextHref(t *testing.T) {
 			limit:       10,
 			start:       "VNFD-NAME",
 			apipath:     "/api/v1/vnfds",
-			query:       models.PaginationQueryParameters{OrderBy: "name"},
+			query:       models.PgnQueryParams{OrderBy: "name"},
 			expectedURL: baseURI + "/api/v1/vnfds?start=VNFD-NAME&limit=10",
 		},
 		{
@@ -85,7 +86,7 @@ func TestMakeNextHref(t *testing.T) {
 			limit:       10,
 			start:       "VNFD-ID",
 			apipath:     "/api/v1/vnfds",
-			query:       models.PaginationQueryParameters{OrderBy: "created_at"},
+			query:       models.PgnQueryParams{OrderBy: "created_at"},
 			expectedURL: baseURI + "/api/v1/vnfds?start=VNFD-ID&limit=10&sort=created_at",
 		},
 	}

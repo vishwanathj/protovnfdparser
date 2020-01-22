@@ -246,7 +246,7 @@ func getVnfds(t *testing.T) {
 		panic(err)
 		t.Fail()
 	}
-	pvnfds, err := vnfdService.GetVnfds("", 1)
+	pvnfds, err := vnfdService.GetVnfds("", 1, "created_at")
 	if pvnfds.Vnfds == nil && pvnfds.Next == nil &&
 		pvnfds.TotalCount == 0 && pvnfds.Limit == 1 && pvnfds.First != nil {
 		t.Log("Success")
@@ -264,7 +264,7 @@ func getVnfds(t *testing.T) {
 	if e != nil {
 		t.Fatal()
 	}
-	pvnfds, err = vnfdService.GetVnfds("", 1)
+	pvnfds, err = vnfdService.GetVnfds("", 1, "created_at")
 	if pvnfds.Vnfds != nil && pvnfds.Next != nil &&
 		pvnfds.TotalCount == 1 && pvnfds.Limit == 1 && pvnfds.First != nil {
 		t.Log("Success")
@@ -289,7 +289,7 @@ func getVnfdsFail(t *testing.T) {
 		panic(err)
 		t.Fail()
 	}
-	pvnfds, err := vnfdService.GetVnfds("", 1)
+	pvnfds, err := vnfdService.GetVnfds("", 1, "created_at")
 	if pvnfds.Vnfds == nil && pvnfds.Next == nil &&
 		pvnfds.TotalCount == 0 && pvnfds.Limit == 1 && pvnfds.First != nil {
 		t.Log("Success")
@@ -307,7 +307,7 @@ func getVnfdsFail(t *testing.T) {
 	if e != nil {
 		t.Fatal()
 	}
-	pvnfds, err = vnfdService.GetVnfds("", 1)
+	pvnfds, err = vnfdService.GetVnfds("", 1, "created_at")
 
 	if err != nil {
 		t.Log("Success")

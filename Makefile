@@ -12,6 +12,7 @@ BUILD_DIR=build/package
 DEPLOYMENT_DIR=deployments/docker-compose
 #https://medium.com/pantomath/go-tools-gitlab-how-to-do-continuous-integration-like-a-boss-941a3a9ad0b6
 PKG_LIST=$(shell go list ./... | grep -v /vendor/)
+LINT_DKR_IMG=golangci/golangci-lint:v1.21.0-alpine
 #BINARY_UNIX=$(BINARY_NAME)_unix
 
 all: deps build unit
@@ -51,7 +52,8 @@ race:
 msan:
 		$(GOTEST) -msan -short ${PKG_LIST}
 
-
+docker-lint:
+		docker run --rm -v ${PWD}:/workdir -w /workdir $(LINT_DKR_IMG) golangci-lint run -v
 docker-build:
 		docker-compose -f $(DEPLOYMENT_DIR)/docker-compose.yml build
 		#docker-compose -f $(DEPLOYMENT_DIR)/docker-compose.alpine.yml build

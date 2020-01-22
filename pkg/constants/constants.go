@@ -3,12 +3,6 @@ package constants
 // ENVCONFIG_PREFIX is the value for prefix to be used with envconfig module
 const ENVCONFIG_PREFIX = "VNFDSVC"
 
-// VnfdKey the key to be used for the VNFD document collection
-const VnfdKey = "name"
-
-// VnfdID the key that holds the Vnfd ID
-const VnfdID = "_id"
-
 // IDPrefix VNFD ID prefix
 const VnfdIDPrefix = "VNFD-"
 

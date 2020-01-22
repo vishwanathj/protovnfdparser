@@ -2,10 +2,11 @@ package service
 
 import (
 	"encoding/json"
+	"fmt"
+	"net/http"
 	"sync"
 
 	log "github.com/sirupsen/logrus"
-
 	"github.com/vishwanathj/protovnfdparser/pkg/config"
 	"github.com/vishwanathj/protovnfdparser/pkg/constants"
 	"github.com/vishwanathj/protovnfdparser/pkg/dataaccess"
@@ -14,34 +15,35 @@ import (
 	"github.com/vishwanathj/protovnfdparser/pkg/utils"
 )
 
-type VnfdSvc struct {
+type VnfdService struct {
 	dal dataaccess.VnfdRepository
 	cfg config.Config
 }
 
-var svcInstance *VnfdSvc
+var svcInstance *VnfdService
 var once sync.Once
 
-// GetVnfdServiceInstance returns a singleton instance of VnfdSvc
-func GetVnfdServiceInstance(cfg config.Config) (*VnfdSvc, error) {
+// GetVnfdServiceInstance returns a singleton instance of VnfdService
+func GetVnfdServiceInstance(cfg config.Config) (*VnfdService, error) {
 	once.Do(func() {
 		d, err := mongo.NewMongoDAL(cfg)
 		if err != nil {
 			panic(err)
 		}
-		svcInstance = &VnfdSvc{d, cfg}
+		svcInstance = &VnfdService{d, cfg}
 	})
 	return svcInstance, nil
 }
 
 // CreateVnfd method that creates a new VNFD
-func (p *VnfdSvc) CreateVnfd(u *models.Vnfd) error {
+func (p *VnfdService) CreateVnfd(u *models.Vnfd) error {
 	log.Debug()
 
 	u.SetCreationTimeAttributes()
 	jsonval, err := json.Marshal(u)
 	if err != nil {
-		return err
+		return fmt.Errorf("%d", http.StatusBadRequest)
+		//return err
 	}
 	log.WithFields(log.Fields{"vnfdStrJsonVal": string(jsonval)}).Debug()
 
@@ -56,7 +58,7 @@ func (p *VnfdSvc) CreateVnfd(u *models.Vnfd) error {
 }
 
 // GetByVnfdname method that retrieves a VNFD given the name
-func (p *VnfdSvc) GetByVnfdname(vnfdname string) (*models.Vnfd, error) {
+func (p *VnfdService) GetByVnfdname(vnfdname string) (*models.Vnfd, error) {
 	log.Debug()
 
 	model, err := p.dal.FindVnfdByName(vnfdname)
@@ -80,7 +82,7 @@ func (p *VnfdSvc) GetByVnfdname(vnfdname string) (*models.Vnfd, error) {
 }
 
 // GetByVnfdID method that retrieves a VNFD given its ID
-func (p *VnfdSvc) GetByVnfdID(vnfdID string) (*models.Vnfd, error) {
+func (p *VnfdService) GetByVnfdID(vnfdID string) (*models.Vnfd, error) {
 	log.Debug()
 	model, err := p.dal.FindVnfdByID(vnfdID)
 	if err != nil {
@@ -102,7 +104,7 @@ func (p *VnfdSvc) GetByVnfdID(vnfdID string) (*models.Vnfd, error) {
 }
 
 // GetVnfds method that retrieves a paginated list of Vnfds
-func (p *VnfdSvc) GetVnfds(start string, limitinp int) (models.PaginatedVnfds, error) {
+func (p *VnfdService) GetVnfds(start string, limitinp int, sort string) (models.PaginatedVnfds, error) {
 	log.Debug()
 
 	var limit int
@@ -115,7 +117,7 @@ func (p *VnfdSvc) GetVnfds(start string, limitinp int) (models.PaginatedVnfds, e
 	}
 
 	var res models.PaginatedVnfds
-	vnfds, count, err := p.dal.GetVnfds(start, limit)
+	vnfds, count, err := p.dal.GetVnfds(start, limit, sort)
 	log.WithFields(log.Fields{"VNFDS": vnfds}).Debug("GET_VNFDS")
 
 	if err != nil {
@@ -138,15 +140,22 @@ func (p *VnfdSvc) GetVnfds(start string, limitinp int) (models.PaginatedVnfds, e
 	}
 
 	pgnCfg := p.cfg.PgntConfig
-	if len(vnfds) == 0 || len(vnfds) < limit {
-		first := models.Link{Href: models.MakeFirstHref(*pgnCfg, limit, constants.ApiPathVnfds)}
-		res = models.PaginatedVnfds{Limit: limit, TotalCount: count, First: &first, Next: nil, Vnfds: vnfds}
-	} else {
-		//log.WithFields(log.Fields{"LAST": vnfds[limit-1].Name})
-		first := models.Link{Href: models.MakeFirstHref(*pgnCfg, limit, constants.ApiPathVnfds)}
-		next := models.Link{Href: models.MakeNextHref(*pgnCfg, limit, vnfds[limit-1].Name, constants.ApiPathVnfds)}
-		res = models.PaginatedVnfds{Limit: limit, TotalCount: count, First: &first, Next: &next, Vnfds: vnfds}
+	var first *models.Link
+	var next *models.Link
+	var queryParams models.PgnQueryParams
+
+	if len(sort) != 0 {
+		queryParams = models.PgnQueryParams{OrderBy: sort}
 	}
+
+	first = &models.Link{Href: models.MakeFirstHref(*pgnCfg, limit, constants.ApiPathVnfds, queryParams)}
+
+	if len(vnfds) == 0 || len(vnfds) < limit {
+		next = nil
+	} else {
+		next = &models.Link{Href: models.MakeNextHref(*pgnCfg, limit, vnfds[limit-1].Name, constants.ApiPathVnfds, queryParams)}
+	}
+	res = models.PaginatedVnfds{Limit: limit, TotalCount: count, First: first, Next: next, Vnfds: vnfds}
 
 	// Ensure that the resulting container in "res" validates against the defined schema
 	//jsonval, err := json.Marshal(vnfds)
@@ -160,7 +169,7 @@ func (p *VnfdSvc) GetVnfds(start string, limitinp int) (models.PaginatedVnfds, e
 }
 
 // GetInputParamsSchemaForVnfd method that returns valid InputParams schema given a Vnfd
-func (p *VnfdSvc) GetInputParamsSchemaForVnfd(jsonval []byte) ([]byte, error) {
+func (p *VnfdService) GetInputParamsSchemaForVnfd(jsonval []byte) ([]byte, error) {
 	log.Debug()
 	inp, err := utils.GenerateJSONSchemaFromParameterizedTemplate(jsonval)
 	log.WithFields(log.Fields{"inp": string(inp)}).Debug("Inputs received from end user")
@@ -168,13 +177,13 @@ func (p *VnfdSvc) GetInputParamsSchemaForVnfd(jsonval []byte) ([]byte, error) {
 }
 
 // GetHealth method used for liveness probe by kubernetes
-func (p *VnfdSvc) GetHealth() string {
+func (p *VnfdService) GetHealth() string {
 	log.Debug()
 	return "OK"
 }
 
 // GetReadiness method use for mongodb readiness probe by kubernetes
-/*func (p *VnfdSvc) GetReadiness() (string) {
+/*func (p *VnfdService) GetReadiness() (string) {
 	log.Debug()
 	p.collection.Find(bson.M{"name": bson.M{"$gt": ""}})
 	_, err := p.collection.Count()

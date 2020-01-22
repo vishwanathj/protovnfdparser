@@ -9,5 +9,5 @@ type VnfdRepository interface {
 	InsertVnfd(vnfd *models.Vnfd) error
 	FindVnfdByID(id string) (*models.Vnfd, error)
 	FindVnfdByName(name string) (*models.Vnfd, error)
-	GetVnfds(start string, limit int) ([]models.Vnfd, int, error)
+	GetVnfds(start string, limit int, sort string) ([]models.Vnfd, int, error)
 }

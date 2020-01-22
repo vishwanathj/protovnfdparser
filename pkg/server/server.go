@@ -31,10 +31,10 @@ func NewServer(v models.VnfdService, cfg *config.WebServerConfig) *Server {
 func (s *Server) Start() {
 	log.Debug()
 	webServerPort := fmt.Sprintf("%d", s.config.WebServerPort)
-	webServerSecurePort := fmt.Sprintf("%d", s.config.WebServerSecurePort)
+	//webServerSecurePort := fmt.Sprintf("%d", s.config.WebServerSecurePort)
 	fmt.Println("Listening on port: ", webServerPort)
-	go http.ListenAndServeTLS(":"+webServerSecurePort, "/etc/ssl/certs/vnfdsvc.crt",
-		"/etc/ssl/certs/vnfdsvc.key", handlers.LoggingHandler(os.Stdout, s.router))
+	//go http.ListenAndServeTLS(":"+webServerSecurePort, "/etc/ssl/certs/vnfdsvc.crt",
+	//"/etc/ssl/certs/vnfdsvc.key", handlers.LoggingHandler(os.Stdout, s.router))
 	if err := http.ListenAndServe(":"+webServerPort, handlers.LoggingHandler(os.Stdout, s.router)); err != nil {
 		log.Fatal("http.ListenAndServe: ", err)
 	}

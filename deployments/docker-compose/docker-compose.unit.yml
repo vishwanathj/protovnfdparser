@@ -12,7 +12,5 @@ services:
     working_dir: /go/src/github.com/vishwanathj/protovnfdparser
     #https://stackoverflow.com/questions/51022134/docker-compose-cant-print-environment-variable-in-docker-container
     #https://docs.docker.com/compose/compose-file/#variable-substitution
-    command: bash -c "printenv PWD && echo $$RESULTS_DIR && ls -l $$RESULTS_DIR
-      && go test ./... -coverprofile=$$RESULTS_DIR/coverage_unit.out -tags=unit
-      && golint ./... &> $$RESULTS_DIR/lint.out
-      && go tool vet . &> $$RESULTS_DIR/vet.out"
+    command: bash -c "echo $$RESULTS_DIR && ls -l $$RESULTS_DIR
+      && go test ./... -coverprofile=$$RESULTS_DIR/coverage_unit.out -tags=unit"

@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"encoding/json"
 	"errors"
+
 	"github.com/vishwanathj/protovnfdparser/pkg/constants"
 
 	"github.com/gorilla/mux"
@@ -86,9 +87,9 @@ func (vr *vnfdRouter) getVnfdsHandler(w http.ResponseWriter, r *http.Request) {
 	//limit := vars.Get("limit")
 	start := vars.Get(constants.PaginationURLStart)
 	limit := vars.Get(constants.PaginationURLLimit)
-	//sort := vars.Get(constants.PaginationURLSort)
+	sort := vars.Get(constants.PaginationURLSort)
 
-	log.WithFields(log.Fields{"LIMIT": limit, "START": start}).Debug("Inputs received from end user")
+	log.WithFields(log.Fields{"LIMIT": limit, "START": start, "SORT": sort}).Debug("Inputs received from end user")
 
 	var l int
 	var err error
@@ -102,7 +103,7 @@ func (vr *vnfdRouter) getVnfdsHandler(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
-	vnfds, err := vr.vnfdService.GetVnfds(start, l)
+	vnfds, err := vr.vnfdService.GetVnfds(start, l, sort)
 	if err != nil {
 		Error(w, http.StatusBadRequest, err.Error())
 		return

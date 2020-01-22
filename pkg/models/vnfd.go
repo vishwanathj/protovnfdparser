@@ -1,8 +1,9 @@
 package models
 
 import (
-	"github.com/vishwanathj/protovnfdparser/pkg/constants"
 	"time"
+
+	"github.com/vishwanathj/protovnfdparser/pkg/constants"
 
 	"github.com/satori/go.uuid"
 )
@@ -62,7 +63,7 @@ type VnfdService interface {
 	CreateVnfd(v *Vnfd) error
 	GetByVnfdname(vnfdname string) (*Vnfd, error)
 	GetByVnfdID(vnfdID string) (*Vnfd, error)
-	GetVnfds(start string, limit int) (PaginatedVnfds, error)
+	GetVnfds(start string, limit int, sort string) (PaginatedVnfds, error)
 	GetInputParamsSchemaForVnfd(vnfdjson []byte) ([]byte, error)
 	GetHealth() string
 	//GetReadiness() (string)
