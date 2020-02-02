@@ -2,9 +2,10 @@ package service
 
 import (
 	"encoding/json"
-	"fmt"
 	"net/http"
 	"sync"
+
+	"github.com/vishwanathj/protovnfdparser/pkg/errors"
 
 	log "github.com/sirupsen/logrus"
 	"github.com/vishwanathj/protovnfdparser/pkg/config"
@@ -36,25 +37,39 @@ func GetVnfdServiceInstance(cfg config.Config) (*VnfdService, error) {
 }
 
 // CreateVnfd method that creates a new VNFD
-func (p *VnfdService) CreateVnfd(u *models.Vnfd) error {
+func (p *VnfdService) CreateVnfd(u *models.Vnfd) errors.VnfdsvcError {
 	log.Debug()
+
+	// validate vnfd post body received from end user
+	inputVnfd, err := json.Marshal(u)
+	if err != nil {
+		return errors.VnfdsvcError{err, http.StatusBadRequest}
+	}
+	log.Info(string(inputVnfd))
+
+	err = utils.ValidateVnfdPostBody(inputVnfd)
+	if err != nil {
+		return errors.VnfdsvcError{err, http.StatusBadRequest}
+	}
 
 	u.SetCreationTimeAttributes()
 	jsonval, err := json.Marshal(u)
 	if err != nil {
-		return fmt.Errorf("%d", http.StatusBadRequest)
-		//return err
+		return errors.VnfdsvcError{err, http.StatusBadRequest}
 	}
 	log.WithFields(log.Fields{"vnfdStrJsonVal": string(jsonval)}).Debug()
 
 	//Before posting to the database, make sure, the newly created model adheres to the schema
 	err = utils.ValidateVnfdInstanceBody(jsonval)
 	if err != nil {
-		//log.WithFields(log.Fields{"CreateVnfdError": err}).Error()
-		return err
+		return errors.VnfdsvcError{err, http.StatusBadRequest}
 	}
 
-	return p.dal.InsertVnfd(u)
+	err = p.dal.InsertVnfd(u)
+	if err != nil {
+		return errors.VnfdsvcError{err, http.StatusConflict}
+	}
+	return errors.VnfdsvcError{nil, http.StatusOK}
 }
 
 // GetByVnfdname method that retrieves a VNFD given the name

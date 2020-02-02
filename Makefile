@@ -51,7 +51,6 @@ race:
 		$(GOTEST) -race ${PKG_LIST}
 msan:
 		$(GOTEST) -msan -short ${PKG_LIST}
-
 docker-lint:
 		docker run --rm -v ${PWD}:/workdir -w /workdir $(LINT_DKR_IMG) golangci-lint run -v
 docker-build:
@@ -80,7 +79,6 @@ docker-ELK: docker-clean
 docker-jmeter: docker-clean
 		docker-compose -f $(DEPLOYMENT_DIR)/docker-compose.yml -f $(DEPLOYMENT_DIR)/docker-compose.jmeter.yml up
 		#docker-compose -f $(DEPLOYMENT_DIR)/docker-compose.unit.yml -f $(DEPLOYMENT_DIR)/docker-compose.int.yml -f $(DEPLOYMENT_DIR)/docker-compose.jmeter.yml up
-
 docker-clean:
 		#docker-compose -f $(DEPLOYMENT_DIR)/docker-compose.unit.yml -f $(DEPLOYMENT_DIR)/docker-compose.int.yml -f $(DEPLOYMENT_DIR)/docker-compose.jmeter.yml down
 		docker-compose -f $(DEPLOYMENT_DIR)/docker-compose.yml -f $(DEPLOYMENT_DIR)/docker-compose.ELK.yml down

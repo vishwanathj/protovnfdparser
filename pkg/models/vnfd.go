@@ -4,6 +4,7 @@ import (
 	"time"
 
 	"github.com/vishwanathj/protovnfdparser/pkg/constants"
+	"github.com/vishwanathj/protovnfdparser/pkg/errors"
 
 	"github.com/satori/go.uuid"
 )
@@ -17,8 +18,8 @@ type Vnfd struct {
 	// below is a refactor attempting to get rid of `"bson:" _id"' that is mongo specific
 	ID        string `json:"id,omitempty"`
 	Name      string `json:"name"`
-	Status    string `json:"status"`
-	CreatedAt string `json:"created_at"`
+	Status    string `json:"status,omitempty"`
+	CreatedAt string `json:"created_at,omitempty"`
 	Vdus      []*struct {
 		Constraints *struct {
 			Dedicated interface{} `json:"dedicated,omitempty"`
@@ -60,7 +61,7 @@ func (v *Vnfd) SetCreationTimeAttributes() {
 
 // VnfdService defines methods that implement the VnfdService interface
 type VnfdService interface {
-	CreateVnfd(v *Vnfd) error
+	CreateVnfd(v *Vnfd) errors.VnfdsvcError
 	GetByVnfdname(vnfdname string) (*Vnfd, error)
 	GetByVnfdID(vnfdID string) (*Vnfd, error)
 	GetVnfds(start string, limit int, sort string) (PaginatedVnfds, error)

@@ -1,7 +1,6 @@
 package server
 
 import (
-	"bytes"
 	"encoding/json"
 	"errors"
 
@@ -10,9 +9,7 @@ import (
 	"github.com/gorilla/mux"
 	log "github.com/sirupsen/logrus"
 	"github.com/vishwanathj/protovnfdparser/pkg/models"
-	"github.com/vishwanathj/protovnfdparser/pkg/utils"
-	//utils "github.com/vishwanathj/JSON-Parameterized-Data-Validator/pkg/jsondatavalidator"
-	"io/ioutil"
+
 	"net/http"
 	"regexp"
 	"strconv"
@@ -45,23 +42,6 @@ func NewVnfdRouter(v models.VnfdService, router *mux.Router) *mux.Router {
 
 func (vr *vnfdRouter) createVnfdHandler(w http.ResponseWriter, r *http.Request) {
 	log.Debug()
-	body, err := ioutil.ReadAll(r.Body)
-	if err != nil {
-		Error(w, http.StatusInternalServerError, err.Error())
-		return
-	}
-	// Make a clone for later processing
-	bodyClone := ioutil.NopCloser(bytes.NewBuffer(body))
-
-	log.WithFields(log.Fields{"POST_BODY_VNFD_ORIG": string(body)}).Debug()
-	err = utils.ValidateVnfdPostBody(body)
-	if err != nil {
-		Error(w, http.StatusBadRequest, err.Error())
-		return
-	}
-
-	//restore the body for the http.Request
-	r.Body = bodyClone
 	vnfd, err := decodeVnfd(r)
 	log.WithFields(log.Fields{"Vnfd": vnfd}).Debug()
 	if err != nil {
@@ -70,10 +50,10 @@ func (vr *vnfdRouter) createVnfdHandler(w http.ResponseWriter, r *http.Request) 
 		return
 	}
 
-	err = vr.vnfdService.CreateVnfd(&vnfd)
-	if err != nil {
+	svcerr := vr.vnfdService.CreateVnfd(&vnfd)
+	if svcerr.OrigError != nil {
 		log.WithFields(log.Fields{"CreateVnfdErr": err}).Error()
-		Error(w, http.StatusConflict, err.Error())
+		Error(w, int(svcerr.HttpCode), svcerr.OrigError.Error())
 		return
 	}
 

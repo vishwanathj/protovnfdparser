@@ -452,12 +452,15 @@ func createVnfd_single_vnfd_insert_for_get_test(t *testing.T) {
 	var vnfd models.Vnfd
 
 	err = json.Unmarshal(createVnfdObj, &vnfd)
+	if err != nil {
+		t.Fatal("Failed to unmarshal")
+	}
 
-	err = vnfdService.CreateVnfd(&vnfd)
+	svcerr := vnfdService.CreateVnfd(&vnfd)
 
 	//Assert
-	if err != nil {
-		t.Errorf("Unable to create vnfd: %s", err)
+	if svcerr.OrigError != nil {
+		t.Errorf("Unable to create vnfd: %s", svcerr.OrigError)
 	}
 	var results []models.Vnfd
 	session.GetCollection(dbName, vnfdCollectionName).Find(nil).All(&results)
