@@ -73,53 +73,53 @@ func (p *VnfdService) CreateVnfd(u *models.Vnfd) errors.VnfdsvcError {
 }
 
 // GetByVnfdname method that retrieves a VNFD given the name
-func (p *VnfdService) GetByVnfdname(vnfdname string) (*models.Vnfd, error) {
+func (p *VnfdService) GetByVnfdname(vnfdname string) (*models.Vnfd, errors.VnfdsvcError) {
 	log.Debug()
 
 	model, err := p.dal.FindVnfdByName(vnfdname)
 
 	if err != nil {
 		log.Error("Query Error:", err)
-		return nil, err
+		return nil, errors.VnfdsvcError{err, http.StatusNotFound}
 	}
 	jsonval, err := json.Marshal(model)
 	if err != nil {
 		log.Error("JSON Marshall error:", err)
-		return nil, err
+		return nil, errors.VnfdsvcError{err, http.StatusNotFound}
 	}
 	err = utils.ValidateVnfdInstanceBody(jsonval)
 	if err != nil {
 		log.Error("Failed ValidateVnfdInstanceBody:", err)
-		return nil, err
+		return nil, errors.VnfdsvcError{err, http.StatusNotFound}
 	}
 	log.WithFields(log.Fields{"vnfdname": vnfdname}).Debug()
-	return model, err
+	return model, errors.VnfdsvcError{nil, http.StatusOK}
 }
 
 // GetByVnfdID method that retrieves a VNFD given its ID
-func (p *VnfdService) GetByVnfdID(vnfdID string) (*models.Vnfd, error) {
+func (p *VnfdService) GetByVnfdID(vnfdID string) (*models.Vnfd, errors.VnfdsvcError) {
 	log.Debug()
 	model, err := p.dal.FindVnfdByID(vnfdID)
 	if err != nil {
 		log.Error("Query Error:", err)
-		return nil, err
+		return nil, errors.VnfdsvcError{err, http.StatusNotFound}
 	}
 	jsonval, err := json.Marshal(model)
 	if err != nil {
 		log.Error("JSON Marshall error:", err)
-		return nil, err
+		return nil, errors.VnfdsvcError{err, http.StatusNotFound}
 	}
 	err = utils.ValidateVnfdInstanceBody(jsonval)
 	if err != nil {
 		log.Error("Failed ValidateVnfdInstanceBody:", err)
-		return nil, err
+		return nil, errors.VnfdsvcError{err, http.StatusNotFound}
 	}
 	log.WithFields(log.Fields{"vnfdid": vnfdID}).Debug()
-	return model, err
+	return model, errors.VnfdsvcError{nil, http.StatusOK}
 }
 
 // GetVnfds method that retrieves a paginated list of Vnfds
-func (p *VnfdService) GetVnfds(start string, limitinp int, sort string) (models.PaginatedVnfds, error) {
+func (p *VnfdService) GetVnfds(start string, limitinp int, sort string) (models.PaginatedVnfds, errors.VnfdsvcError) {
 	log.Debug()
 
 	var limit int
@@ -136,7 +136,7 @@ func (p *VnfdService) GetVnfds(start string, limitinp int, sort string) (models.
 	log.WithFields(log.Fields{"VNFDS": vnfds}).Debug("GET_VNFDS")
 
 	if err != nil {
-		return res, err
+		return res, errors.VnfdsvcError{err, http.StatusInternalServerError}
 	}
 
 	// Below validates each item in array adheres to schema and has not been manually tampered in DB directly
@@ -145,12 +145,12 @@ func (p *VnfdService) GetVnfds(start string, limitinp int, sort string) (models.
 		jsonval, err := json.Marshal(vnfds[i])
 		if err != nil {
 			log.Error("JSON Marshall error:", err)
-			return res, err
+			return res, errors.VnfdsvcError{err, http.StatusInternalServerError}
 		}
 		err = utils.ValidateVnfdInstanceBody(jsonval)
 		if err != nil {
 			log.Error("Failed ValidateVnfdInstanceBody:", err)
-			return res, err
+			return res, errors.VnfdsvcError{err, http.StatusInternalServerError}
 		}
 	}
 
@@ -177,18 +177,21 @@ func (p *VnfdService) GetVnfds(start string, limitinp int, sort string) (models.
 	jsonval, err := json.Marshal(res)
 	if err != nil {
 		log.Error("JSON Marshall error:", err)
-		return res, err
+		return res, errors.VnfdsvcError{err, http.StatusInternalServerError}
 	}
 	err = utils.ValidatePaginatedVnfdsInstancesBody(jsonval)
-	return res, err
+	return res, errors.VnfdsvcError{err, http.StatusInternalServerError}
 }
 
 // GetInputParamsSchemaForVnfd method that returns valid InputParams schema given a Vnfd
-func (p *VnfdService) GetInputParamsSchemaForVnfd(jsonval []byte) ([]byte, error) {
+func (p *VnfdService) GetInputParamsSchemaForVnfd(jsonval []byte) ([]byte, errors.VnfdsvcError) {
 	log.Debug()
 	inp, err := utils.GenerateJSONSchemaFromParameterizedTemplate(jsonval)
 	log.WithFields(log.Fields{"inp": string(inp)}).Debug("Inputs received from end user")
-	return inp, err
+	if err != nil {
+		return nil, errors.VnfdsvcError{err, http.StatusInternalServerError}
+	}
+	return inp, errors.VnfdsvcError{nil, http.StatusOK}
 }
 
 // GetHealth method used for liveness probe by kubernetes

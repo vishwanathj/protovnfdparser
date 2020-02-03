@@ -246,7 +246,10 @@ func getVnfds(t *testing.T) {
 		panic(err)
 		t.Fail()
 	}
-	pvnfds, err := vnfdService.GetVnfds("", 1, "created_at")
+	pvnfds, svcerr := vnfdService.GetVnfds("", 1, "created_at")
+	if svcerr.OrigError != nil {
+		t.Fail()
+	}
 	if pvnfds.Vnfds == nil && pvnfds.Next == nil &&
 		pvnfds.TotalCount == 0 && pvnfds.Limit == 1 && pvnfds.First != nil {
 		t.Log("Success")
@@ -264,7 +267,10 @@ func getVnfds(t *testing.T) {
 	if e != nil {
 		t.Fatal()
 	}
-	pvnfds, err = vnfdService.GetVnfds("", 1, "created_at")
+	pvnfds, svcerr = vnfdService.GetVnfds("", 1, "created_at")
+	if svcerr.OrigError != nil {
+		t.Fail()
+	}
 	if pvnfds.Vnfds != nil && pvnfds.Next != nil &&
 		pvnfds.TotalCount == 1 && pvnfds.Limit == 1 && pvnfds.First != nil {
 		t.Log("Success")
@@ -289,7 +295,10 @@ func getVnfdsFail(t *testing.T) {
 		panic(err)
 		t.Fail()
 	}
-	pvnfds, err := vnfdService.GetVnfds("", 1, "created_at")
+	pvnfds, svcerr := vnfdService.GetVnfds("", 1, "created_at")
+	if svcerr.OrigError != nil {
+		t.Fatal()
+	}
 	if pvnfds.Vnfds == nil && pvnfds.Next == nil &&
 		pvnfds.TotalCount == 0 && pvnfds.Limit == 1 && pvnfds.First != nil {
 		t.Log("Success")
@@ -307,11 +316,11 @@ func getVnfdsFail(t *testing.T) {
 	if e != nil {
 		t.Fatal()
 	}
-	pvnfds, err = vnfdService.GetVnfds("", 1, "created_at")
+	pvnfds, svcerr = vnfdService.GetVnfds("", 1, "created_at")
 
-	if err != nil {
+	if svcerr.OrigError != nil {
 		t.Log("Success")
-		t.Log(err)
+		t.Log(svcerr.OrigError)
 	} else {
 		t.Fail()
 	}
@@ -346,8 +355,8 @@ func getByVnfdID(t *testing.T) {
 	}
 	testVnfdID := "VNFD-50c270ff-47c4-4d66-8a6f-f24de7638451"
 
-	obj, err := vnfdService.GetByVnfdID(testVnfdID)
-	if err != nil {
+	obj, errsvc := vnfdService.GetByVnfdID(testVnfdID)
+	if errsvc.OrigError != nil {
 		t.Error("vnfdService.GetByVnfdname FAILED")
 	} else {
 		t.Log(obj.ID)
@@ -383,10 +392,10 @@ func getByVnfdIDFail(t *testing.T) {
 	}
 	testVnfdID := "VNFD-50c270ff-47c4-4d66-8a6f-f24de7638461"
 
-	obj, err := vnfdService.GetByVnfdID(testVnfdID)
-	if err != nil {
+	obj, errsvc := vnfdService.GetByVnfdID(testVnfdID)
+	if errsvc.OrigError != nil {
 		t.Log("Success")
-		t.Log(err)
+		t.Log(errsvc.OrigError)
 	} else {
 		t.Fail()
 		t.Log(obj)
@@ -422,8 +431,8 @@ func getVnfdByName(t *testing.T) {
 	}
 	testVnfdName := "vnfdOptProps"
 
-	obj, err := vnfdService.GetByVnfdname(testVnfdName)
-	if err != nil {
+	obj, errsvc := vnfdService.GetByVnfdname(testVnfdName)
+	if errsvc.OrigError != nil {
 		t.Error("vnfdService.GetByVnfdname FAILED")
 	} else {
 		t.Log(obj.Name)

@@ -62,10 +62,10 @@ func (v *Vnfd) SetCreationTimeAttributes() {
 // VnfdService defines methods that implement the VnfdService interface
 type VnfdService interface {
 	CreateVnfd(v *Vnfd) errors.VnfdsvcError
-	GetByVnfdname(vnfdname string) (*Vnfd, error)
-	GetByVnfdID(vnfdID string) (*Vnfd, error)
-	GetVnfds(start string, limit int, sort string) (PaginatedVnfds, error)
-	GetInputParamsSchemaForVnfd(vnfdjson []byte) ([]byte, error)
+	GetByVnfdname(vnfdname string) (*Vnfd, errors.VnfdsvcError)
+	GetByVnfdID(vnfdID string) (*Vnfd, errors.VnfdsvcError)
+	GetVnfds(start string, limit int, sort string) (PaginatedVnfds, errors.VnfdsvcError)
+	GetInputParamsSchemaForVnfd(vnfdjson []byte) ([]byte, errors.VnfdsvcError)
 	GetHealth() string
 	//GetReadiness() (string)
 }

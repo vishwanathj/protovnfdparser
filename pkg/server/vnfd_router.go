@@ -8,6 +8,7 @@ import (
 
 	"github.com/gorilla/mux"
 	log "github.com/sirupsen/logrus"
+	vsvcerr "github.com/vishwanathj/protovnfdparser/pkg/errors"
 	"github.com/vishwanathj/protovnfdparser/pkg/models"
 
 	"net/http"
@@ -83,9 +84,10 @@ func (vr *vnfdRouter) getVnfdsHandler(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
-	vnfds, err := vr.vnfdService.GetVnfds(start, l, sort)
-	if err != nil {
-		Error(w, http.StatusBadRequest, err.Error())
+	var svcerr vsvcerr.VnfdsvcError
+	vnfds, svcerr := vr.vnfdService.GetVnfds(start, l, sort)
+	if svcerr.OrigError != nil {
+		Error(w, int(svcerr.HttpCode), err.Error())
 		return
 	}
 
@@ -100,15 +102,15 @@ func (vr *vnfdRouter) getVnfdHandler(w http.ResponseWriter, r *http.Request) {
 	validVnfdID := regexp.MustCompile(constants.VnfdIDPattern)
 	if validVnfdID.MatchString(vnfdname) {
 		vnfd, err := vr.vnfdService.GetByVnfdID(vnfdname)
-		if err != nil {
-			Error(w, http.StatusNotFound, err.Error())
+		if err.OrigError != nil {
+			Error(w, int(err.HttpCode), err.Error())
 			return
 		}
 		JSON(w, http.StatusOK, vnfd)
 	} else {
 		vnfd, err := vr.vnfdService.GetByVnfdname(vnfdname)
-		if err != nil {
-			Error(w, http.StatusNotFound, err.Error())
+		if err.OrigError != nil {
+			Error(w, int(err.HttpCode), err.Error())
 			return
 		}
 		JSON(w, http.StatusOK, vnfd)
@@ -121,7 +123,7 @@ func (vr *vnfdRouter) getVnfdInputParamsSchemaHandler(w http.ResponseWriter, r *
 	vnfdname := vars["name"]
 
 	var vnfd *models.Vnfd
-	var err error
+	var err vsvcerr.VnfdsvcError
 	var jsonval []byte
 	var inputparam []byte
 
@@ -132,23 +134,23 @@ func (vr *vnfdRouter) getVnfdInputParamsSchemaHandler(w http.ResponseWriter, r *
 		vnfd, err = vr.vnfdService.GetByVnfdname(vnfdname)
 	}
 
-	if err != nil {
-		Error(w, http.StatusNotFound, err.Error())
+	if err.OrigError != nil {
+		Error(w, int(err.HttpCode), err.Error())
 		return
 	}
-	jsonval, err = yaml.Marshal(vnfd)
-	if err != nil {
-		Error(w, http.StatusInternalServerError, err.Error())
+	jsonval, errg := yaml.Marshal(vnfd)
+	if errg != nil {
+		Error(w, http.StatusInternalServerError, errg.Error())
 		return
 	}
-	inputparam, err = vr.vnfdService.GetInputParamsSchemaForVnfd(jsonval)
-	if err != nil {
+	inputparam, svcerrg := vr.vnfdService.GetInputParamsSchemaForVnfd(jsonval)
+	if svcerrg.OrigError != nil {
 		Error(w, http.StatusInternalServerError, err.Error())
 		return
 	}
 	var m map[string]interface{}
-	err = json.Unmarshal(inputparam, &m)
-	if err != nil {
+	errg = json.Unmarshal(inputparam, &m)
+	if errg != nil {
 		Error(w, http.StatusInternalServerError, err.Error())
 		return
 	}
