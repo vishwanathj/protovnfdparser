@@ -3,6 +3,7 @@ package service
 import (
 	"encoding/json"
 	"net/http"
+	"regexp"
 	"sync"
 
 	"github.com/vishwanathj/protovnfdparser/pkg/errors"
@@ -72,6 +73,37 @@ func (p *VnfdService) CreateVnfd(u *models.Vnfd) errors.VnfdsvcError {
 	return errors.VnfdsvcError{nil, http.StatusOK}
 }
 
+// GetVnfd method that retrieves a VNFD given the name or the ID
+func (p *VnfdService) GetVnfd(nameorid string) (*models.Vnfd, errors.VnfdsvcError) {
+	log.Debug()
+
+	var model *models.Vnfd
+	var err error
+	validVnfdID := regexp.MustCompile(constants.VnfdIDPattern)
+	if validVnfdID.MatchString(nameorid) {
+		model, err = p.dal.FindVnfdByID(nameorid)
+
+	} else {
+		model, err = p.dal.FindVnfdByName(nameorid)
+	}
+	if err != nil {
+		log.Error("Query Error:", err)
+		return nil, errors.VnfdsvcError{err, http.StatusNotFound}
+	}
+	jsonval, err := json.Marshal(model)
+	if err != nil {
+		log.Error("JSON Marshall error:", err)
+		return nil, errors.VnfdsvcError{err, http.StatusNotFound}
+	}
+	err = utils.ValidateVnfdInstanceBody(jsonval)
+	if err != nil {
+		log.Error("Failed ValidateVnfdInstanceBody:", err)
+		return nil, errors.VnfdsvcError{err, http.StatusInternalServerError}
+	}
+	log.WithFields(log.Fields{"nameorid": nameorid}).Debug()
+	return model, errors.VnfdsvcError{nil, http.StatusOK}
+}
+
 // GetByVnfdname method that retrieves a VNFD given the name
 func (p *VnfdService) GetByVnfdname(vnfdname string) (*models.Vnfd, errors.VnfdsvcError) {
 	log.Debug()
@@ -126,16 +158,17 @@ func (p *VnfdService) GetVnfds(start string, limitinp int, sort string) (models.
 
 	if limitinp <= 0 || limitinp > p.cfg.PgntConfig.MaxLimit || limitinp < p.cfg.PgntConfig.MinLimit {
 		limit = p.cfg.PgntConfig.DefaultLimit
-		log.Debug("DefaultLimit being used instead of user provided input")
+		log.Info("DefaultLimit being used instead of user provided input")
 	} else {
 		limit = limitinp
 	}
 
 	var res models.PaginatedVnfds
 	vnfds, count, err := p.dal.GetVnfds(start, limit, sort)
-	log.WithFields(log.Fields{"VNFDS": vnfds}).Debug("GET_VNFDS")
+	log.WithFields(log.Fields{"VNFDS": vnfds, "count": count, "err": err}).Info("GET_VNFDS")
 
 	if err != nil {
+		log.Info(err)
 		return res, errors.VnfdsvcError{err, http.StatusInternalServerError}
 	}
 
@@ -144,12 +177,12 @@ func (p *VnfdService) GetVnfds(start string, limitinp int, sort string) (models.
 	for i := 0; i < len(vnfds); i++ {
 		jsonval, err := json.Marshal(vnfds[i])
 		if err != nil {
-			log.Error("JSON Marshall error:", err)
+			log.Info("JSON Marshall error:", err)
 			return res, errors.VnfdsvcError{err, http.StatusInternalServerError}
 		}
 		err = utils.ValidateVnfdInstanceBody(jsonval)
 		if err != nil {
-			log.Error("Failed ValidateVnfdInstanceBody:", err)
+			log.Info("Failed ValidateVnfdInstanceBody:", err)
 			return res, errors.VnfdsvcError{err, http.StatusInternalServerError}
 		}
 	}
@@ -176,11 +209,14 @@ func (p *VnfdService) GetVnfds(start string, limitinp int, sort string) (models.
 	//jsonval, err := json.Marshal(vnfds)
 	jsonval, err := json.Marshal(res)
 	if err != nil {
-		log.Error("JSON Marshall error:", err)
+		log.Info("JSON Marshall error:", err)
 		return res, errors.VnfdsvcError{err, http.StatusInternalServerError}
 	}
 	err = utils.ValidatePaginatedVnfdsInstancesBody(jsonval)
-	return res, errors.VnfdsvcError{err, http.StatusInternalServerError}
+	if err != nil {
+		return res, errors.VnfdsvcError{err, http.StatusInternalServerError}
+	}
+	return res, errors.VnfdsvcError{nil, http.StatusOK}
 }
 
 // GetInputParamsSchemaForVnfd method that returns valid InputParams schema given a Vnfd

@@ -18,6 +18,13 @@ const envLogFile = "LOGFILE"
 func init() {
 	// Log as JSON instead of the default ASCII formatter.
 	log.SetFormatter(&log.JSONFormatter{})
+	/*log.SetFormatter(&log.JSONFormatter{
+		CallerPrettyfier: func(f *runtime.Frame) (string, string) {
+			repopath := fmt.Sprintf("%s/src/github.com/vishwanathj", os.Getenv("GOPATH"))
+			filename := strings.Replace(f.File, repopath, "", -1)
+			return fmt.Sprintf("%s()", f.Function), fmt.Sprintf("%s:%d", filename, f.Line)
+		},
+	})*/
 
 	//var filename  = "/tmp/go_web_server.log"
 	var filename = os.Getenv(envLogFile)
