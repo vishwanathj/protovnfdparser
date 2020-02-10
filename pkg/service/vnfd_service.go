@@ -105,52 +105,6 @@ func (p *VnfdService) GetVnfd(nameorid string) (*models.Vnfd, errors.VnfdsvcErro
 	return model, errors.VnfdsvcError{nil, http.StatusOK}
 }
 
-/*// GetByVnfdname method that retrieves a VNFD given the name
-func (p *VnfdService) GetByVnfdname(vnfdname string) (*models.Vnfd, errors.VnfdsvcError) {
-	log.Debug()
-
-	model, err := p.dal.FindVnfdByName(vnfdname)
-
-	if err != nil {
-		log.Error("Query Error:", err)
-		return nil, errors.VnfdsvcError{err, http.StatusNotFound}
-	}
-	jsonval, err := json.Marshal(model)
-	if err != nil {
-		log.Error("JSON Marshall error:", err)
-		return nil, errors.VnfdsvcError{err, http.StatusNotFound}
-	}
-	err = vnfdVerifier.ValidateVnfdInstanceBody(jsonval)
-	if err != nil {
-		log.Error("Failed ValidateVnfdInstanceBody:", err)
-		return nil, errors.VnfdsvcError{err, http.StatusNotFound}
-	}
-	log.WithFields(log.Fields{"vnfdname": vnfdname}).Debug()
-	return model, errors.VnfdsvcError{nil, http.StatusOK}
-}
-
-// GetByVnfdID method that retrieves a VNFD given its ID
-func (p *VnfdService) GetByVnfdID(vnfdID string) (*models.Vnfd, errors.VnfdsvcError) {
-	log.Debug()
-	model, err := p.dal.FindVnfdByID(vnfdID)
-	if err != nil {
-		log.Error("Query Error:", err)
-		return nil, errors.VnfdsvcError{err, http.StatusNotFound}
-	}
-	jsonval, err := json.Marshal(model)
-	if err != nil {
-		log.Error("JSON Marshall error:", err)
-		return nil, errors.VnfdsvcError{err, http.StatusNotFound}
-	}
-	err = vnfdVerifier.ValidateVnfdInstanceBody(jsonval)
-	if err != nil {
-		log.Error("Failed ValidateVnfdInstanceBody:", err)
-		return nil, errors.VnfdsvcError{err, http.StatusNotFound}
-	}
-	log.WithFields(log.Fields{"vnfdid": vnfdID}).Debug()
-	return model, errors.VnfdsvcError{nil, http.StatusOK}
-}*/
-
 // GetVnfds method that retrieves a paginated list of Vnfds
 func (p *VnfdService) GetVnfds(start string, limitinp int, sort string) (models.PaginatedVnfds, errors.VnfdsvcError) {
 	log.Debug()

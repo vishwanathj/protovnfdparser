@@ -165,189 +165,17 @@ var validInstanceBody = []byte(`{
 var mockdal = dalmocks.VnfdRepository{}
 var testcfg = config.GetConfigInstance()
 
-/*func TestVnfdService_CreateVnfd(t *testing.T) {
-	mockErr := errors.New("mock error")
-
-	// svcInstance is defined in vnfd_service.go
-	svcInstance = &VnfdService{&mockdal, *testcfg}
-
-	tests := []struct {
-		desc                string
-		postBody            []byte
-		postBodyErr         bool
-		postBodySuccess     bool
-		instanceBodyErr     bool
-		instanceBodySuccess bool
-		insertDBErr         bool
-		insertDBSuccess     bool
-		expectedErr         vsvcerr.VnfdsvcError
-	}{
-		{
-			desc:        "vcpu missing, post body non-compliant with schema",
-			postBody:    createVnfdObjVcpusMissing,
-			expectedErr: vsvcerr.VnfdsvcError{mockErr, http.StatusBadRequest},
-		},
-		{
-			desc:            "vnfd instance body non-compliant with schema",
-			postBody:        createVnfdObj,
-			postBodySuccess: true,
-			instanceBodyErr: true,
-			expectedErr:     vsvcerr.VnfdsvcError{mockErr, http.StatusBadRequest},
-		},
-		{
-			desc:                "insert into DB passes",
-			postBody:            createVnfdObj,
-			postBodySuccess:     true,
-			instanceBodySuccess: true,
-			insertDBSuccess:     true,
-			expectedErr:         vsvcerr.VnfdsvcError{nil, http.StatusOK},
-		},
-		{
-			desc:        "insert into DB fails",
-			postBody:    createVnfdObj,
-			insertDBErr: true,
-			expectedErr: vsvcerr.VnfdsvcError{mockErr, http.StatusConflict},
-		},
-	}
-	for i, tc := range tests {
-		t.Run(fmt.Sprintf("%d:%s", i, tc.desc), func(t *testing.T) {
-			var vnfd models.Vnfd
-			err := json.Unmarshal(tc.postBody, &vnfd)
-			if err != nil {
-				t.Fatal("Failed to unmarshal")
-			}
-
-			// svcInstance is defined in vnfd_service.go
-			//svcInstance = &VnfdService{&mockdal, *testcfg}
-
-			// pre setup, prior to invoking CreateVnfd
-			if tc.postBodyErr || tc.instanceBodyErr || tc.postBodySuccess || tc.instanceBodySuccess {
-				// vnfdVerifier is defined in vnfd_service.go
-				vnfdVerifier = &umocks.VnfdValidator{}
-				if tc.postBodyErr {
-					// []uint8 used instead of []byte due to https://github.com/stretchr/testify/issues/387
-					vnfdVerifier.(*umocks.VnfdValidator).On("ValidateVnfdPostBody", mock.AnythingOfType("[]uint8")).Return(mockErr)
-				}
-				if tc.postBodySuccess {
-					vnfdVerifier.(*umocks.VnfdValidator).On("ValidateVnfdPostBody", mock.AnythingOfType("[]uint8")).Return(nil)
-				}
-				if tc.instanceBodyErr {
-					vnfdVerifier.(*umocks.VnfdValidator).On("ValidateVnfdInstanceBody", mock.AnythingOfType("[]uint8")).Return(mockErr)
-				}
-				if tc.instanceBodySuccess {
-					vnfdVerifier.(*umocks.VnfdValidator).On("ValidateVnfdInstanceBody", mock.AnythingOfType("[]uint8")).Return(nil)
-				}
-			}
-
-			if tc.insertDBErr {
-				svcInstance.dal.(*dalmocks.VnfdRepository).On("InsertVnfd", mock.AnythingOfType("*models.Vnfd")).Return(mockErr).Once()
-			}
-			if tc.insertDBSuccess {
-				svcInstance.dal.(*dalmocks.VnfdRepository).On("InsertVnfd", mock.AnythingOfType("*models.Vnfd")).Return(nil).Once()
-			}
-
-			svcerr := svcInstance.CreateVnfd(&vnfd)
-			fmt.Println(svcerr.HttpCode, tc.expectedErr.HttpCode)
-			assert.Equal(t, svcerr.HttpCode, tc.expectedErr.HttpCode, "error code comparison")
-		})
-	}
+type onCallReturnArgs struct {
+	onCallMethodName    string
+	onCallMethodArgType string
+	retArgList          []interface{}
 }
-
-/*
-func TestVnfdService_GetVnfd2(t *testing.T) {
-	// setup test
-	mockErr := errors.New("mock error")
-	var vnfd models.Vnfd
-	err := json.Unmarshal(validInstanceBody, &vnfd)
-	if err != nil {
-		t.Fatal("Failed to unmarshal")
-	}
-	// svcInstance is defined in vnfd_service.go
-	svcInstance = &VnfdService{&mockdal, *testcfg}
-
-	// vnfdVerifier is defined in vnfd_service.go
-	vnfdVerifier = &umocks.VnfdValidator{}
-
-	tests := []struct {
-		desc             string
-		nameorid         string
-		findByIDErr      bool
-		findByIDPass     bool
-		findByNameErr    bool
-		findByNamePass   bool
-		instanceBodyFail bool
-		expectedErr      vsvcerr.VnfdsvcError
-	}{
-		{
-			desc:         "Get by ID pass",
-			nameorid:     "VNFD-50c270ff-47c4-4d66-8a6f-f24de7638451",
-			findByIDPass: true,
-			expectedErr:  vsvcerr.VnfdsvcError{nil, http.StatusOK},
-		},
-		{
-			desc:        "Get by ID fail",
-			nameorid:    "VNFD-50c270ff-47c4-4d66-8a6f-f24de7638461",
-			findByIDErr: true,
-			expectedErr: vsvcerr.VnfdsvcError{mockErr, http.StatusNotFound},
-		},
-		{
-			desc:           "Get by Name pass",
-			nameorid:       "vnfd1",
-			findByNamePass: true,
-			expectedErr:    vsvcerr.VnfdsvcError{nil, http.StatusOK},
-		},
-		{
-			desc:          "Get by Name fail",
-			nameorid:      "vnfd1",
-			findByNameErr: true,
-			expectedErr:   vsvcerr.VnfdsvcError{mockErr, http.StatusNotFound},
-		},
-		{
-			desc:             "Vnfd instance body validation failure",
-			nameorid:         "vnfd12",
-			instanceBodyFail: true,
-			expectedErr:      vsvcerr.VnfdsvcError{mockErr, http.StatusInternalServerError},
-		},
-	}
-	for i, tc := range tests {
-		t.Run(fmt.Sprintf("%d:%s", i, tc.desc), func(t *testing.T) {
-			if tc.findByIDPass {
-				svcInstance.dal.(*dalmocks.VnfdRepository).On("FindVnfdByID", mock.AnythingOfType("string")).Return(&vnfd, nil).Once()
-				vnfdVerifier.(*umocks.VnfdValidator).On("ValidateVnfdInstanceBody", mock.AnythingOfType("[]uint8")).Return(nil).Once()
-			}
-			if tc.findByNamePass {
-				svcInstance.dal.(*dalmocks.VnfdRepository).On("FindVnfdByName", mock.AnythingOfType("string")).Return(&vnfd, nil).Once()
-				vnfdVerifier.(*umocks.VnfdValidator).On("ValidateVnfdInstanceBody", mock.AnythingOfType("[]uint8")).Return(nil).Once()
-			}
-			if tc.findByIDErr {
-				svcInstance.dal.(*dalmocks.VnfdRepository).On("FindVnfdByID", mock.AnythingOfType("string")).Return(nil, mockErr).Once()
-			}
-			if tc.findByNameErr {
-				svcInstance.dal.(*dalmocks.VnfdRepository).On("FindVnfdByName", mock.AnythingOfType("string")).Return(nil, mockErr).Once()
-			}
-
-			if tc.instanceBodyFail {
-				svcInstance.dal.(*dalmocks.VnfdRepository).On("FindVnfdByName", mock.AnythingOfType("string")).Return(&vnfd, nil).Once()
-				vnfdVerifier.(*umocks.VnfdValidator).On("ValidateVnfdInstanceBody", mock.AnythingOfType("[]uint8")).Return(mockErr).Once()
-			}
-
-			_, svcerr := svcInstance.GetVnfd(tc.nameorid)
-			assert.Equal(t, svcerr.HttpCode, tc.expectedErr.HttpCode, "error code comparison")
-		})
-	}
-}*/
 
 func TestVnfdService_CreateVnfd(t *testing.T) {
 	mockErr := errors.New("mock error")
 
 	// svcInstance is defined in vnfd_service.go
 	svcInstance = &VnfdService{&mockdal, *testcfg}
-
-	type onCallReturnArgs struct {
-		onCallMethodName    string
-		onCallMethodArgType string
-		retArgList          []interface{}
-	}
 
 	tests := []struct {
 		desc            string
@@ -441,12 +269,6 @@ func TestVnfdService_GetVnfd(t *testing.T) {
 	daMock := svcInstance.dal.(*dalmocks.VnfdRepository)
 	valMock := vnfdVerifier.(*umocks.VnfdValidator)
 
-	type onCallReturnArgs struct {
-		onCallMethodName    string
-		onCallMethodArgType string
-		retArgList          []interface{}
-	}
-
 	tests := []struct {
 		desc            string
 		nameorid        string
@@ -505,6 +327,152 @@ func TestVnfdService_GetVnfd(t *testing.T) {
 				call.Once()
 			}
 			_, svcerr := svcInstance.GetVnfd(tc.nameorid)
+			assert.Equal(t, svcerr.HttpCode, tc.expectedErr.HttpCode, "error code comparison")
+		})
+	}
+}
+
+func TestVnfdService_GetVnfds(t *testing.T) {
+	// setup test
+	mockErr := errors.New("mock error")
+	var vnfd models.Vnfd
+	err := json.Unmarshal(validInstanceBody, &vnfd)
+	if err != nil {
+		t.Fatal("Failed to unmarshal")
+	}
+
+	var vnfds []models.Vnfd
+	vnfds = append(vnfds, vnfd)
+	// svcInstance is defined in vnfd_service.go
+	svcInstance = &VnfdService{&mockdal, *testcfg}
+
+	type onCallMultipleReturnArgs struct {
+		onCallMethodName    string
+		onCallMethodArgType []string
+		retArgList          []interface{}
+	}
+
+	tests := []struct {
+		desc            string
+		startParam      string
+		limitParam      int
+		sortParam       string
+		expectedErr     vsvcerr.VnfdsvcError
+		daOnReturnArgs  *onCallMultipleReturnArgs
+		valOnReturnArgs []onCallMultipleReturnArgs
+	}{
+		{
+			desc:           "success->set limit higher than allowed",
+			startParam:     "",
+			limitParam:     25,
+			sortParam:      "",
+			expectedErr:    vsvcerr.VnfdsvcError{nil, http.StatusOK},
+			daOnReturnArgs: &onCallMultipleReturnArgs{"GetVnfds", []string{"string", "int", "string"}, []interface{}{vnfds, 1, nil}},
+			valOnReturnArgs: []onCallMultipleReturnArgs{
+				{"ValidateVnfdInstanceBody", []string{"[]uint8"}, []interface{}{nil}},
+				{"ValidatePaginatedVnfdsInstancesBody", []string{"[]uint8"}, []interface{}{nil}},
+			},
+		},
+		{
+			desc:           "success->set limit within boundary",
+			startParam:     "",
+			limitParam:     3,
+			sortParam:      "created_at",
+			expectedErr:    vsvcerr.VnfdsvcError{nil, http.StatusOK},
+			daOnReturnArgs: &onCallMultipleReturnArgs{"GetVnfds", []string{"string", "int", "string"}, []interface{}{vnfds, 1, nil}},
+			valOnReturnArgs: []onCallMultipleReturnArgs{
+				{"ValidateVnfdInstanceBody", []string{"[]uint8"}, []interface{}{nil}},
+				{"ValidatePaginatedVnfdsInstancesBody", []string{"[]uint8"}, []interface{}{nil}},
+			},
+		},
+		{
+			desc:           "fail->retrieving vnfds from DB",
+			startParam:     "",
+			limitParam:     3,
+			sortParam:      "",
+			expectedErr:    vsvcerr.VnfdsvcError{nil, http.StatusInternalServerError},
+			daOnReturnArgs: &onCallMultipleReturnArgs{"GetVnfds", []string{"string", "int", "string"}, []interface{}{nil, 0, mockErr}},
+		},
+		{
+			desc:           "fail->individual instance body fails to adhere to schema",
+			startParam:     "",
+			limitParam:     3,
+			sortParam:      "",
+			expectedErr:    vsvcerr.VnfdsvcError{nil, http.StatusInternalServerError},
+			daOnReturnArgs: &onCallMultipleReturnArgs{"GetVnfds", []string{"string", "int", "string"}, []interface{}{vnfds, 1, nil}},
+			valOnReturnArgs: []onCallMultipleReturnArgs{
+				{"ValidateVnfdInstanceBody", []string{"[]uint8"}, []interface{}{mockErr}},
+			},
+		},
+		{
+			desc:           "vnfds fails to adhere to paginated schema",
+			startParam:     "",
+			limitParam:     3,
+			sortParam:      "",
+			expectedErr:    vsvcerr.VnfdsvcError{nil, http.StatusInternalServerError},
+			daOnReturnArgs: &onCallMultipleReturnArgs{"GetVnfds", []string{"string", "int", "string"}, []interface{}{vnfds, 1, nil}},
+			valOnReturnArgs: []onCallMultipleReturnArgs{
+				{"ValidateVnfdInstanceBody", []string{"[]uint8"}, []interface{}{nil}},
+				{"ValidatePaginatedVnfdsInstancesBody", []string{"[]uint8"}, []interface{}{mockErr}},
+			},
+		},
+	}
+	for i, tc := range tests {
+		t.Run(fmt.Sprintf("%d:%s", i, tc.desc), func(t *testing.T) {
+			if tc.daOnReturnArgs != nil {
+				daMock := svcInstance.dal.(*dalmocks.VnfdRepository)
+
+				call := daMock.On(tc.daOnReturnArgs.onCallMethodName)
+				for _, item := range tc.daOnReturnArgs.onCallMethodArgType {
+					call.Arguments = append(call.Arguments, mock.AnythingOfType(item))
+				}
+				for _, item := range tc.daOnReturnArgs.retArgList {
+					call.ReturnArguments = append(call.ReturnArguments, item)
+				}
+				call.Once()
+			}
+			lenValArgs := len(tc.valOnReturnArgs)
+			if lenValArgs != 0 {
+				// vnfdVerifier is defined in vnfd_service.go
+				vnfdVerifier = &umocks.VnfdValidator{}
+				valMock := vnfdVerifier.(*umocks.VnfdValidator)
+
+				for _, item := range tc.valOnReturnArgs {
+
+					call := valMock.On(item.onCallMethodName)
+					for _, args := range item.onCallMethodArgType {
+						call.Arguments = append(call.Arguments, mock.AnythingOfType(args))
+					}
+					for _, elem := range item.retArgList {
+						call.ReturnArguments = append(call.ReturnArguments, elem)
+					}
+				}
+			}
+			_, svcerr := svcInstance.GetVnfds(tc.startParam, tc.limitParam, tc.sortParam)
+			assert.Equal(t, svcerr.HttpCode, tc.expectedErr.HttpCode, "error code comparison")
+		})
+	}
+}
+
+func TestVnfdService_GetInputParamsSchemaForVnfd(t *testing.T) {
+	// svcInstance is defined in vnfd_service.go
+	svcInstance = &VnfdService{&mockdal, *testcfg}
+
+	tests := []struct {
+		desc        string
+		inpVnfdJson []byte
+		expectedErr vsvcerr.VnfdsvcError
+	}{
+		{
+			desc:        "success: retrieve input params schema",
+			inpVnfdJson: validInstanceBody,
+			expectedErr: vsvcerr.VnfdsvcError{nil, http.StatusOK},
+		},
+	}
+	for i, tc := range tests {
+		t.Run(fmt.Sprintf("%d:%s", i, tc.desc), func(t *testing.T) {
+			_, svcerr := svcInstance.GetInputParamsSchemaForVnfd(tc.inpVnfdJson)
+			fmt.Println(svcerr.HttpCode, tc.expectedErr.HttpCode)
 			assert.Equal(t, svcerr.HttpCode, tc.expectedErr.HttpCode, "error code comparison")
 		})
 	}
