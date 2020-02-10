@@ -24,6 +24,7 @@ type VnfdService struct {
 
 var svcInstance *VnfdService
 var once sync.Once
+var vnfdVerifier = utils.NewVnfdValidator()
 
 // GetVnfdServiceInstance returns a singleton instance of VnfdService
 func GetVnfdServiceInstance(cfg config.Config) (*VnfdService, error) {
@@ -41,14 +42,14 @@ func GetVnfdServiceInstance(cfg config.Config) (*VnfdService, error) {
 func (p *VnfdService) CreateVnfd(u *models.Vnfd) errors.VnfdsvcError {
 	log.Debug()
 
-	// validate vnfd post body received from end user
+	// validate vnfd post body received from end user; need to marshal to json first
 	inputVnfd, err := json.Marshal(u)
 	if err != nil {
 		return errors.VnfdsvcError{err, http.StatusBadRequest}
 	}
 	log.Info(string(inputVnfd))
 
-	err = utils.ValidateVnfdPostBody(inputVnfd)
+	err = vnfdVerifier.ValidateVnfdPostBody(inputVnfd)
 	if err != nil {
 		return errors.VnfdsvcError{err, http.StatusBadRequest}
 	}
@@ -61,7 +62,7 @@ func (p *VnfdService) CreateVnfd(u *models.Vnfd) errors.VnfdsvcError {
 	log.WithFields(log.Fields{"vnfdStrJsonVal": string(jsonval)}).Debug()
 
 	//Before posting to the database, make sure, the newly created model adheres to the schema
-	err = utils.ValidateVnfdInstanceBody(jsonval)
+	err = vnfdVerifier.ValidateVnfdInstanceBody(jsonval)
 	if err != nil {
 		return errors.VnfdsvcError{err, http.StatusBadRequest}
 	}
@@ -95,7 +96,7 @@ func (p *VnfdService) GetVnfd(nameorid string) (*models.Vnfd, errors.VnfdsvcErro
 		log.Error("JSON Marshall error:", err)
 		return nil, errors.VnfdsvcError{err, http.StatusNotFound}
 	}
-	err = utils.ValidateVnfdInstanceBody(jsonval)
+	err = vnfdVerifier.ValidateVnfdInstanceBody(jsonval)
 	if err != nil {
 		log.Error("Failed ValidateVnfdInstanceBody:", err)
 		return nil, errors.VnfdsvcError{err, http.StatusInternalServerError}
@@ -104,7 +105,7 @@ func (p *VnfdService) GetVnfd(nameorid string) (*models.Vnfd, errors.VnfdsvcErro
 	return model, errors.VnfdsvcError{nil, http.StatusOK}
 }
 
-// GetByVnfdname method that retrieves a VNFD given the name
+/*// GetByVnfdname method that retrieves a VNFD given the name
 func (p *VnfdService) GetByVnfdname(vnfdname string) (*models.Vnfd, errors.VnfdsvcError) {
 	log.Debug()
 
@@ -119,7 +120,7 @@ func (p *VnfdService) GetByVnfdname(vnfdname string) (*models.Vnfd, errors.Vnfds
 		log.Error("JSON Marshall error:", err)
 		return nil, errors.VnfdsvcError{err, http.StatusNotFound}
 	}
-	err = utils.ValidateVnfdInstanceBody(jsonval)
+	err = vnfdVerifier.ValidateVnfdInstanceBody(jsonval)
 	if err != nil {
 		log.Error("Failed ValidateVnfdInstanceBody:", err)
 		return nil, errors.VnfdsvcError{err, http.StatusNotFound}
@@ -141,14 +142,14 @@ func (p *VnfdService) GetByVnfdID(vnfdID string) (*models.Vnfd, errors.VnfdsvcEr
 		log.Error("JSON Marshall error:", err)
 		return nil, errors.VnfdsvcError{err, http.StatusNotFound}
 	}
-	err = utils.ValidateVnfdInstanceBody(jsonval)
+	err = vnfdVerifier.ValidateVnfdInstanceBody(jsonval)
 	if err != nil {
 		log.Error("Failed ValidateVnfdInstanceBody:", err)
 		return nil, errors.VnfdsvcError{err, http.StatusNotFound}
 	}
 	log.WithFields(log.Fields{"vnfdid": vnfdID}).Debug()
 	return model, errors.VnfdsvcError{nil, http.StatusOK}
-}
+}*/
 
 // GetVnfds method that retrieves a paginated list of Vnfds
 func (p *VnfdService) GetVnfds(start string, limitinp int, sort string) (models.PaginatedVnfds, errors.VnfdsvcError) {
@@ -180,7 +181,7 @@ func (p *VnfdService) GetVnfds(start string, limitinp int, sort string) (models.
 			log.Info("JSON Marshall error:", err)
 			return res, errors.VnfdsvcError{err, http.StatusInternalServerError}
 		}
-		err = utils.ValidateVnfdInstanceBody(jsonval)
+		err = vnfdVerifier.ValidateVnfdInstanceBody(jsonval)
 		if err != nil {
 			log.Info("Failed ValidateVnfdInstanceBody:", err)
 			return res, errors.VnfdsvcError{err, http.StatusInternalServerError}
@@ -212,7 +213,7 @@ func (p *VnfdService) GetVnfds(start string, limitinp int, sort string) (models.
 		log.Info("JSON Marshall error:", err)
 		return res, errors.VnfdsvcError{err, http.StatusInternalServerError}
 	}
-	err = utils.ValidatePaginatedVnfdsInstancesBody(jsonval)
+	err = vnfdVerifier.ValidatePaginatedVnfdsInstancesBody(jsonval)
 	if err != nil {
 		return res, errors.VnfdsvcError{err, http.StatusInternalServerError}
 	}

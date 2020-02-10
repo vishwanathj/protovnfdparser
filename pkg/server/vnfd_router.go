@@ -12,7 +12,7 @@ import (
 	"github.com/vishwanathj/protovnfdparser/pkg/models"
 
 	"net/http"
-	"regexp"
+	//"regexp"
 	"strconv"
 
 	"gopkg.in/yaml.v2"
@@ -99,7 +99,14 @@ func (vr *vnfdRouter) getVnfdHandler(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
 	vnfdname := vars["name"]
 
-	validVnfdID := regexp.MustCompile(constants.VnfdIDPattern)
+	vnfd, err := vr.vnfdService.GetVnfd(vnfdname)
+	if err.OrigError != nil {
+		Error(w, int(err.HttpCode), err.Error())
+		return
+	}
+	JSON(w, http.StatusOK, vnfd)
+
+	/*validVnfdID := regexp.MustCompile(constants.VnfdIDPattern)
 	if validVnfdID.MatchString(vnfdname) {
 		vnfd, err := vr.vnfdService.GetByVnfdID(vnfdname)
 		if err.OrigError != nil {
@@ -114,7 +121,7 @@ func (vr *vnfdRouter) getVnfdHandler(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 		JSON(w, http.StatusOK, vnfd)
-	}
+	}*/
 }
 
 func (vr *vnfdRouter) getVnfdInputParamsSchemaHandler(w http.ResponseWriter, r *http.Request) {
@@ -127,12 +134,13 @@ func (vr *vnfdRouter) getVnfdInputParamsSchemaHandler(w http.ResponseWriter, r *
 	var jsonval []byte
 	var inputparam []byte
 
-	validVnfdID := regexp.MustCompile(constants.VnfdIDPattern)
+	vnfd, err = vr.vnfdService.GetVnfd(vnfdname)
+	/*validVnfdID := regexp.MustCompile(constants.VnfdIDPattern)
 	if validVnfdID.MatchString(vnfdname) {
 		vnfd, err = vr.vnfdService.GetByVnfdID(vnfdname)
 	} else {
 		vnfd, err = vr.vnfdService.GetByVnfdname(vnfdname)
-	}
+	}*/
 
 	if err.OrigError != nil {
 		Error(w, int(err.HttpCode), err.Error())
