@@ -3,10 +3,11 @@ package utils
 import (
 	"fmt"
 	"io/ioutil"
-	"os"
 	"path/filepath"
 	"runtime"
 	"strings"
+
+	"github.com/vishwanathj/protovnfdparser/pkg/config"
 
 	"github.com/ghodss/yaml"
 
@@ -37,25 +38,12 @@ var SchemaFileInputParam string
 var SchemaFileDefineNonParam string
 
 func init() {
-	log.Debug()
-	localUnitTest := os.Getenv("TEST")
-	log.Debug(localUnitTest)
-
-	if localUnitTest == "true" {
-		SchemaDir = "../schema/"
-		SchemaInputPath = "../schema/vnfdInputSchema.json#/vnfdInput"
-		SchemaParameterizedInstanceRelPath = "../schema/vnfdInstanceSchema.json#/vnfdInstance"
-		SchemaPaginatedInstancesRelPath = "../schema/vnfdPaginatedInstanceSchema.json#/vnfdsPaginatedInstances"
-		SchemaFileInputParam = "inputParam.json"
-		SchemaFileDefineNonParam = "vnfdDefineNonParam.json"
-	} else {
-		SchemaDir = "/usr/share/vnfdservice/schema/"
-		SchemaInputPath = "/usr/share/vnfdservice/schema/vnfdInputSchema.json#/vnfdInput"
-		SchemaParameterizedInstanceRelPath = "/usr/share/vnfdservice/schema/vnfdInstanceSchema.json#/vnfdInstance"
-		SchemaPaginatedInstancesRelPath = "/usr/share/vnfdservice/schema/vnfdPaginatedInstanceSchema.json#/vnfdsPaginatedInstances"
-		SchemaFileInputParam = "inputParam.json"
-		SchemaFileDefineNonParam = "vnfdDefineNonParam.json"
-	}
+	SchemaDir = config.GetConfigInstance().JsonSchemaConfig.SchemaDir
+	SchemaInputPath = SchemaDir + "vnfdInputSchema.json#/vnfdInput"
+	SchemaParameterizedInstanceRelPath = SchemaDir + "vnfdInstanceSchema.json#/vnfdInstance"
+	SchemaPaginatedInstancesRelPath = SchemaDir + "vnfdPaginatedInstanceSchema.json#/vnfdsPaginatedInstances"
+	SchemaFileInputParam = "inputParam.json"
+	SchemaFileDefineNonParam = "vnfdDefineNonParam.json"
 }
 
 // ValidateVnfdPostBody validates the given JSON body against the parameterized
@@ -108,13 +96,15 @@ func ValidateInputParamAgainstParameterizedVnfd(inputParamJSON []byte,
 // by parsing the template for parameterized variables and looking up
 // allowable values for those parameterized variables.
 func GenerateJSONSchemaFromParameterizedTemplate(parameterizedJSON []byte) ([]byte, error) {
-	abspath := GetAbsDIRPathGivenRelativePath(SchemaDir) + "/" + SchemaFileDefineNonParam
+	//abspath := getAbsDIRPathGivenRelativePath(SchemaDir) + "/" + SchemaFileDefineNonParam
+	abspath := SchemaDir + SchemaFileDefineNonParam
 	nonParamDefineJSONBuf, err := GetSchemaDefinitionFileAsJSONBuf(abspath)
 	if err != nil {
 		return nil, err
 	}
 
-	abspath = GetAbsDIRPathGivenRelativePath(SchemaDir) + "/" + SchemaFileInputParam
+	//abspath = getAbsDIRPathGivenRelativePath(SchemaDir) + "/" + SchemaFileInputParam
+	abspath = SchemaDir + SchemaFileInputParam
 	inputParamSchemaJSONBuf, err := GetSchemaDefinitionFileAsJSONBuf(abspath)
 	//inputParamSchemaJSONBuf, err := GetSchemaDefinitionFileAsJSONBuf(SchemaFileInputParam)
 	if err != nil {
@@ -123,20 +113,6 @@ func GenerateJSONSchemaFromParameterizedTemplate(parameterizedJSON []byte) ([]by
 
 	return json_schema_val.GenerateJSONSchemaFromParameterizedTemplate(parameterizedJSON, nonParamDefineJSONBuf, inputParamSchemaJSONBuf, []string{"vnfd_id", "name"}, `\${1}(.*)`)
 	//return json_schema_val.GenerateJSONSchemaFromParameterizedTemplate(parameterizedJSON, nonParamDefineJSONBuf, inputParamSchemaJSONBuf, []string{"vnfd_id", "name"}, `.*\$.*`)
-}
-
-// GetAbsDIRPathGivenRelativePath returns the absolute path on the file system given the
-// relative path from where this function resides
-func GetAbsDIRPathGivenRelativePath(relpath string) string {
-	log.Debug()
-	_, fname, _, _ := runtime.Caller(0)
-	var path string
-	if strings.HasPrefix(relpath, "../") {
-		path = filepath.Join(filepath.Dir(fname), relpath)
-	} else {
-		path = relpath
-	}
-	return path
 }
 
 // GetSchemaStringWhenGivenFilePath generates a string that needs to
@@ -159,7 +135,7 @@ func GetSchemaStringWhenGivenFilePath(relativePathOfJSONSchemaFile string) strin
 // GetSchemaDefinitionFileAsJSONBuf reads a Schema file and returns JSON buf
 func GetSchemaDefinitionFileAsJSONBuf(schemaFileName string) ([]byte, error) {
 	log.Debug()
-	//bpath := GetAbsDIRPathGivenRelativePath(SchemaDir)
+	//bpath := getAbsDIRPathGivenRelativePath(SchemaDir)
 	//yamlText, err := ioutil.ReadFile(bpath + "/" + schemaFileName)
 	yamlText, err := ioutil.ReadFile(schemaFileName)
 

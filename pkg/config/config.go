@@ -8,9 +8,10 @@ import (
 )
 
 type Config struct {
-	MongoDBConfig *MongoDBConfig    `envconfig:"mongodbcfg"`
-	PgntConfig    *PaginationConfig `envconfig:"pgncfg"`
-	WebConfig     *WebServerConfig  `envconfig:"webcfg"`
+	MongoDBConfig    *MongoDBConfig    `envconfig:"mongodbcfg"`
+	PgntConfig       *PaginationConfig `envconfig:"pgncfg"`
+	WebConfig        *WebServerConfig  `envconfig:"webcfg"`
+	JsonSchemaConfig *JsonSchemaConfig `envconfig:"jsonschemacfg"`
 }
 
 var cfgInstance *Config
@@ -24,11 +25,11 @@ type MongoDBConfig struct {
 }
 
 type PaginationConfig struct {
-	BaseURI        string 	`envconfig:"BASE_URI" default:"http://localhost:8080"`
-	DefaultLimit   int 	`envconfig:"DEFAULT_LIMIT" default:"5"`
-	MaxLimit       int 	`envconfig:"MAX_LIMIT" default:"10"`
-	MinLimit       int 	`envconfig:"MIN_LIMIT" default:"1"`
-	DefaultOrderBy string 	`envconfig:"DEFAULT_ORDER_BY" default:"name"`
+	BaseURI        string `envconfig:"BASE_URI" default:"http://localhost:8080"`
+	DefaultLimit   int    `envconfig:"DEFAULT_LIMIT" default:"5"`
+	MaxLimit       int    `envconfig:"MAX_LIMIT" default:"10"`
+	MinLimit       int    `envconfig:"MIN_LIMIT" default:"1"`
+	DefaultOrderBy string `envconfig:"DEFAULT_ORDER_BY" default:"name"`
 }
 
 type WebServerConfig struct {
@@ -37,11 +38,20 @@ type WebServerConfig struct {
 	WebServerBasePath   string `envconfig:"WEB_SERVER_BASE_PATH" default:"/"`
 }
 
+type JsonSchemaConfig struct {
+	SchemaDir string `envconfig:"SCHEMA_DIR" default:"/usr/share/vnfdservice/schema/"`
+}
+
 func GetConfigInstance() *Config {
 	once.Do(func() {
 		var cfg Config
 		envconfig.MustProcess(constants.ENVCONFIG_PREFIX, &cfg)
-		cfgInstance = &Config{cfg.MongoDBConfig, cfg.PgntConfig, cfg.WebConfig}
+		cfgInstance = &Config{
+			cfg.MongoDBConfig,
+			cfg.PgntConfig,
+			cfg.WebConfig,
+			cfg.JsonSchemaConfig,
+		}
 	})
 	return cfgInstance
 }

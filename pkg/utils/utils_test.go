@@ -8,6 +8,8 @@ import (
 	"fmt"
 	"io/ioutil"
 	"path/filepath"
+	"runtime"
+	"strings"
 	"testing"
 
 	"github.com/vishwanathj/protovnfdparser/pkg/utils"
@@ -26,6 +28,19 @@ var BASE_DIR_VALID_Input_Param = BASE_DIR + "valid/inputParam/"
 var BASE_DIR_INVALID_Input_Param = BASE_DIR + "invalid/inputParam/"
 var BASE_DIR_VALID_Paginated = BASE_DIR + "valid/parameterizedPaginatedInstances/"
 var BASE_DIR_INVALID_Paginated = BASE_DIR + "invalid/parameterizedPaginatedInstances/"
+
+// getAbsDIRPathGivenRelativePath returns the absolute path on the file system given the
+// relative path from where this function resides
+func getAbsDIRPathGivenRelativePath(relpath string) string {
+	_, fname, _, _ := runtime.Caller(0)
+	var path string
+	if strings.HasPrefix(relpath, "../") {
+		path = filepath.Join(filepath.Dir(fname), relpath)
+	} else {
+		path = relpath
+	}
+	return path
+}
 
 func TestValidatePaginatedVnfdsInstancesBody(t *testing.T) {
 	tables := []struct {
@@ -232,8 +247,8 @@ func TestValidateInputParamAgainstParameterizedVnfd(t *testing.T) {
 
 	for i, table := range tables {
 		t.Run(fmt.Sprintf("%d:%s", i, table.description), func(t *testing.T) {
-			vnfdpath := utils.GetAbsDIRPathGivenRelativePath(table.paramVnfdBaseDir)
-			inputparampath := utils.GetAbsDIRPathGivenRelativePath(table.inputParamBaseDir)
+			vnfdpath := getAbsDIRPathGivenRelativePath(table.paramVnfdBaseDir)
+			inputparampath := getAbsDIRPathGivenRelativePath(table.inputParamBaseDir)
 
 			inparam, ierr := ioutil.ReadFile(inputparampath + "/" + table.inputParamFileName)
 
