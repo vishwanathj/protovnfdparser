@@ -3,8 +3,6 @@ package utils
 import (
 	"fmt"
 	"io/ioutil"
-	"path/filepath"
-	"runtime"
 	"strings"
 
 	"github.com/vishwanathj/protovnfdparser/pkg/config"
@@ -15,43 +13,43 @@ import (
 	json_schema_val "github.com/vishwanathj/JSON-Parameterized-Data-Validator/pkg/jsondatavalidator"
 )
 
-// SchemaDir points to the relative path of where the schema files are located
-var SchemaDir string
+const schemaStrPrefix = `{"$ref": "`
+const schemaStrSuffix = `"}`
 
-// SchemaInputPath is path to schema file for
-// Parameterized templates
-var SchemaInputPath string
+// schemaFileInputParam is name of schema file for input param files
+const schemaFileInputParam = "inputParam.json"
 
-// SchemaParameterizedInstanceRelPath is path to schema file for
-// instantiated Parameterized templates
-var SchemaParameterizedInstanceRelPath string
-
-// SchemaPaginatedInstancesRelPath is path to schema file
-// for paginated output structure
-var SchemaPaginatedInstancesRelPath string
-
-// SchemaFileInputParam is name of schema file for input param files
-var SchemaFileInputParam string
-
-// SchemaFileDefineNonParam is name of schema file for non-parameterized templates.
+// schemaFileDefineNonParam is name of schema file for non-parameterized templates.
 // This is needed by the GenerateJSONSchemaFromParameterizedTemplate function
-var SchemaFileDefineNonParam string
+const schemaFileDefineNonParam = "vnfdDefineNonParam.json"
+
+// schemaDir points to the relative path of where the schema files are located
+var schemaDir string
+
+// schemaStrVnfdInput is path to schema file for
+// Parameterized templates
+var schemaStrVnfdInput string
+
+// schemaStrParameterizedInstance is path to schema file for
+// instantiated Parameterized templates
+var schemaStrParameterizedInstance string
+
+// schemaStrPaginatedInstances is path to schema file
+// for paginated output structure
+var schemaStrPaginatedInstances string
 
 func init() {
-	SchemaDir = config.GetConfigInstance().JsonSchemaConfig.SchemaDir
-	SchemaInputPath = SchemaDir + "vnfdInputSchema.json#/vnfdInput"
-	SchemaParameterizedInstanceRelPath = SchemaDir + "vnfdInstanceSchema.json#/vnfdInstance"
-	SchemaPaginatedInstancesRelPath = SchemaDir + "vnfdPaginatedInstanceSchema.json#/vnfdsPaginatedInstances"
-	SchemaFileInputParam = "inputParam.json"
-	SchemaFileDefineNonParam = "vnfdDefineNonParam.json"
+	schemaDir = config.GetConfigInstance().JsonSchemaConfig.SchemaDir
+	schemaStrVnfdInput = schemaStrPrefix + schemaDir + "vnfdInputSchema.json#/vnfdInput" + schemaStrSuffix
+	schemaStrParameterizedInstance = schemaStrPrefix + schemaDir + "vnfdInstanceSchema.json#/vnfdInstance" + schemaStrSuffix
+	schemaStrPaginatedInstances = schemaStrPrefix + schemaDir + "vnfdPaginatedInstanceSchema.json#/vnfdsPaginatedInstances" + schemaStrSuffix
 }
 
 // ValidateVnfdPostBody validates the given JSON body against the parameterized
 // VNFD Input JSON schema "parameterizedVnfdInputSchema.json" for compliance
 func ValidateVnfdPostBody(body []byte) error {
 	log.Debug()
-	var schemaText = GetSchemaStringWhenGivenFilePath(SchemaInputPath)
-	ioReaderObj := strings.NewReader(schemaText)
+	ioReaderObj := strings.NewReader(schemaStrVnfdInput)
 	return json_schema_val.ValidateJSONBufAgainstSchema(body, ioReaderObj, "vnfdPostBody.json")
 }
 
@@ -59,8 +57,7 @@ func ValidateVnfdPostBody(body []byte) error {
 // VNFD Instance JSON schema "parameterizedVnfdInstanceSchema.json" for compliance
 func ValidateVnfdInstanceBody(jsonval []byte) error {
 	log.Debug()
-	var schemaText = GetSchemaStringWhenGivenFilePath(SchemaParameterizedInstanceRelPath)
-	ioReaderObj := strings.NewReader(schemaText)
+	ioReaderObj := strings.NewReader(schemaStrParameterizedInstance)
 	return json_schema_val.ValidateJSONBufAgainstSchema(jsonval, ioReaderObj, "vnfdInstanceBody.json")
 }
 
@@ -68,8 +65,7 @@ func ValidateVnfdInstanceBody(jsonval []byte) error {
 // Vnfds adhere to the pagination format
 func ValidatePaginatedVnfdsInstancesBody(jsonval []byte) error {
 	log.Debug()
-	var schemaText = GetSchemaStringWhenGivenFilePath(SchemaPaginatedInstancesRelPath)
-	ioReaderObj := strings.NewReader(schemaText)
+	ioReaderObj := strings.NewReader(schemaStrPaginatedInstances)
 	return json_schema_val.ValidateJSONBufAgainstSchema(jsonval, ioReaderObj, "vnfdsPaginatedInstancesBody.json")
 }
 
@@ -89,54 +85,30 @@ func ValidateInputParamAgainstParameterizedVnfd(inputParamJSON []byte,
 	fmt.Println(string(data))
 
 	return json_schema_val.ValidateJSONBufAgainstSchema(inputParamJSON, strings.NewReader(string(data)), "inputParam.json")
-
 }
 
 // GenerateJSONSchemaFromParameterizedTemplate generated a dynamic schema
 // by parsing the template for parameterized variables and looking up
 // allowable values for those parameterized variables.
 func GenerateJSONSchemaFromParameterizedTemplate(parameterizedJSON []byte) ([]byte, error) {
-	//abspath := getAbsDIRPathGivenRelativePath(SchemaDir) + "/" + SchemaFileDefineNonParam
-	abspath := SchemaDir + SchemaFileDefineNonParam
+	abspath := schemaDir + schemaFileDefineNonParam
 	nonParamDefineJSONBuf, err := GetSchemaDefinitionFileAsJSONBuf(abspath)
 	if err != nil {
 		return nil, err
 	}
 
-	//abspath = getAbsDIRPathGivenRelativePath(SchemaDir) + "/" + SchemaFileInputParam
-	abspath = SchemaDir + SchemaFileInputParam
+	abspath = schemaDir + schemaFileInputParam
 	inputParamSchemaJSONBuf, err := GetSchemaDefinitionFileAsJSONBuf(abspath)
-	//inputParamSchemaJSONBuf, err := GetSchemaDefinitionFileAsJSONBuf(SchemaFileInputParam)
 	if err != nil {
 		return nil, err
 	}
 
 	return json_schema_val.GenerateJSONSchemaFromParameterizedTemplate(parameterizedJSON, nonParamDefineJSONBuf, inputParamSchemaJSONBuf, []string{"vnfd_id", "name"}, `\${1}(.*)`)
-	//return json_schema_val.GenerateJSONSchemaFromParameterizedTemplate(parameterizedJSON, nonParamDefineJSONBuf, inputParamSchemaJSONBuf, []string{"vnfd_id", "name"}, `.*\$.*`)
-}
-
-// GetSchemaStringWhenGivenFilePath generates a string that needs to
-// be passed to the schema validator method when compiling a json schema
-func GetSchemaStringWhenGivenFilePath(relativePathOfJSONSchemaFile string) string {
-	log.Debug()
-	_, fname, _, _ := runtime.Caller(0)
-	var path string
-	if strings.HasPrefix(relativePathOfJSONSchemaFile, "../") {
-		path = filepath.Join(filepath.Dir(fname), relativePathOfJSONSchemaFile)
-	} else {
-		path = relativePathOfJSONSchemaFile
-	}
-
-	var schemaText = `{"$ref": "` + path + `"}`
-	log.Debug(schemaText)
-	return schemaText
 }
 
 // GetSchemaDefinitionFileAsJSONBuf reads a Schema file and returns JSON buf
 func GetSchemaDefinitionFileAsJSONBuf(schemaFileName string) ([]byte, error) {
 	log.Debug()
-	//bpath := getAbsDIRPathGivenRelativePath(SchemaDir)
-	//yamlText, err := ioutil.ReadFile(bpath + "/" + schemaFileName)
 	yamlText, err := ioutil.ReadFile(schemaFileName)
 
 	if err != nil {

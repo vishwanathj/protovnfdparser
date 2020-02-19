@@ -3,10 +3,9 @@ package models
 import (
 	"time"
 
+	"github.com/satori/go.uuid"
 	"github.com/vishwanathj/protovnfdparser/pkg/constants"
 	"github.com/vishwanathj/protovnfdparser/pkg/errors"
-
-	"github.com/satori/go.uuid"
 )
 
 // Vnfd Struct for holding Vnfd data
@@ -53,17 +52,17 @@ type Vnfd struct {
 
 // SetCreationTimeAttributes sets the ID, creation timestamp and initial status
 func (v *Vnfd) SetCreationTimeAttributes() {
-	id := uuid.NewV4()
-	v.CreatedAt = time.Now().Format(time.RFC3339)
-	v.ID = constants.VnfdIDPrefix + id.String()
-	v.Status = constants.Available
+	if len(v.CreatedAt) == 0 {
+		id := uuid.NewV4()
+		v.CreatedAt = time.Now().Format(time.RFC3339)
+		v.ID = constants.VnfdIDPrefix + id.String()
+		v.Status = constants.Available
+	}
 }
 
 // VnfdService defines methods that implement the VnfdService interface
 type VnfdService interface {
 	CreateVnfd(v *Vnfd) errors.VnfdsvcError
-	//GetByVnfdname(vnfdname string) (*Vnfd, errors.VnfdsvcError)
-	//GetByVnfdID(vnfdID string) (*Vnfd, errors.VnfdsvcError)
 	GetVnfds(start string, limit int, sort string) (PaginatedVnfds, errors.VnfdsvcError)
 	GetVnfd(nameorid string) (*Vnfd, errors.VnfdsvcError)
 	GetInputParamsSchemaForVnfd(vnfdjson []byte) ([]byte, errors.VnfdsvcError)

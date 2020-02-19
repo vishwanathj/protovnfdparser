@@ -20,7 +20,7 @@ build:
 		$(GOBUILD) -o $(GOPATH)/bin/$(BINARY_NAME) $(BINARY_SRC_DIR)/app/main.go
 unit:
 		#The idiomatic way to disable test caching explicitly is to use -count=1.
-		SCHEMA_DIR=${PWD}/pkg/schema/ $(GOTEST) -v ./... -count=1 -tags=unit -coverprofile results/coverage_unit.out &> results/dbg_unit.out
+		SCHEMA_DIR=${PWD}/pkg/schema/ $(GOTEST) -v ./... -cover -count=1 -tags=unit -coverprofile results/coverage_unit.out &> results/dbg_unit.out
 		go tool cover -html=results/coverage_unit.out -o results/coverage_unit.html
 		go tool cover -func=results/coverage_unit.out -o results/func_coverage.out
 #integration:

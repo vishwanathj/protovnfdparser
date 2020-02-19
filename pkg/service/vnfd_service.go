@@ -11,14 +11,14 @@ import (
 	log "github.com/sirupsen/logrus"
 	"github.com/vishwanathj/protovnfdparser/pkg/config"
 	"github.com/vishwanathj/protovnfdparser/pkg/constants"
-	"github.com/vishwanathj/protovnfdparser/pkg/dataaccess"
+	"github.com/vishwanathj/protovnfdparser/pkg/datarepo"
 	"github.com/vishwanathj/protovnfdparser/pkg/models"
 	"github.com/vishwanathj/protovnfdparser/pkg/mongo"
 	"github.com/vishwanathj/protovnfdparser/pkg/utils"
 )
 
 type VnfdService struct {
-	dal dataaccess.VnfdRepository
+	dal datarepo.VnfdRepository
 	cfg config.Config
 }
 
@@ -29,7 +29,7 @@ var vnfdVerifier = utils.NewVnfdValidator()
 // GetVnfdServiceInstance returns a singleton instance of VnfdService
 func GetVnfdServiceInstance(cfg config.Config) (*VnfdService, error) {
 	once.Do(func() {
-		d, err := mongo.NewMongoDAL(cfg)
+		d, err := mongo.NewMongoRepo(cfg)
 		if err != nil {
 			panic(err)
 		}

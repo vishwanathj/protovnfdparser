@@ -1,4 +1,4 @@
-package dataaccess
+package datarepo
 
 import (
 	"github.com/vishwanathj/protovnfdparser/pkg/models"

@@ -6,21 +6,21 @@ import (
 
 	"github.com/vishwanathj/protovnfdparser/pkg/config"
 
-	"github.com/vishwanathj/protovnfdparser/pkg/dataaccess"
+	"github.com/vishwanathj/protovnfdparser/pkg/datarepo"
 	"github.com/vishwanathj/protovnfdparser/pkg/models"
 	"gopkg.in/mgo.v2"
 	"gopkg.in/mgo.v2/bson"
 )
 
-// MongoDAL stores mongo collection
-type MongoDAL struct {
+// MongoRepo stores mongo collection
+type MongoRepo struct {
 	session    *mgo.Session
 	dbName     string
 	collection *mgo.Collection
 }
 
-// NewMongoDAL creates a new MongoDAL
-func NewMongoDAL(cfg config.Config) (dataaccess.VnfdRepository, error) {
+// NewMongoRepo creates a new MongoRepo
+func NewMongoRepo(cfg config.Config) (datarepo.VnfdRepository, error) {
 	if cfg.MongoDBConfig == nil {
 		panic("mongodb config missing")
 	}
@@ -36,7 +36,7 @@ func NewMongoDAL(cfg config.Config) (dataaccess.VnfdRepository, error) {
 		log.Fatal("collection.EnsureIndex failed")
 		panic(err)
 	}
-	mongo := &MongoDAL{
+	mongo := &MongoRepo{
 		session:    ms.session,
 		dbName:     cfg.MongoDBConfig.MongoDBName,
 		collection: collection,
@@ -45,23 +45,18 @@ func NewMongoDAL(cfg config.Config) (dataaccess.VnfdRepository, error) {
 }
 
 // c is a helper method to get a collection from the session
-func (m *MongoDAL) c(collection string) *mgo.Collection {
+func (m *MongoRepo) c(collection string) *mgo.Collection {
 	return m.session.DB(m.dbName).C(collection)
 }
 
-// Insert stores documents in mongo
-func (m *MongoDAL) Insert(collectionName string, docs ...interface{}) error {
-	return m.c(collectionName).Insert(docs)
-}
-
 // InsertVnfd stores Vnfd documents in mongo
-func (m *MongoDAL) InsertVnfd(vnfd *models.Vnfd) error {
+func (m *MongoRepo) InsertVnfd(vnfd *models.Vnfd) error {
 	// the conversion function below ensures that `_id` values is populated with `VNFD-{UUID} value`
 	mgoModel := toVnfdMgoModel(vnfd)
 	return m.collection.Insert(mgoModel)
 }
 
-func (m *MongoDAL) FindVnfdByID(vnfdID string) (*models.Vnfd, error) {
+func (m *MongoRepo) FindVnfdByID(vnfdID string) (*models.Vnfd, error) {
 	mgoModel := vnfdMgoModel{}
 	//err := m.c("vnfd").Find(bson.M{VnfdID: vnfdID}).One(&mgoModel)
 	collName := m.collection.Name
@@ -73,7 +68,7 @@ func (m *MongoDAL) FindVnfdByID(vnfdID string) (*models.Vnfd, error) {
 	return mgoModel.toModelVnfd(), nil
 }
 
-func (m *MongoDAL) FindVnfdByName(vnfdname string) (*models.Vnfd, error) {
+func (m *MongoRepo) FindVnfdByName(vnfdname string) (*models.Vnfd, error) {
 	mgoModel := vnfdMgoModel{}
 	collName := m.collection.Name
 	err := m.c(collName).Find(bson.M{VnfdKey: vnfdname}).One(&mgoModel)
@@ -84,7 +79,7 @@ func (m *MongoDAL) FindVnfdByName(vnfdname string) (*models.Vnfd, error) {
 	return mgoModel.toModelVnfd(), err
 }
 
-func (m *MongoDAL) GetVnfds(start string, limit int, sort string) ([]models.Vnfd, int, error) {
+func (m *MongoRepo) GetVnfds(start string, limit int, sort string) ([]models.Vnfd, int, error) {
 	var vnfds []vnfdMgoModel
 	var err error
 

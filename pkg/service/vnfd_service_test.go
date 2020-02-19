@@ -13,7 +13,7 @@ import (
 	"github.com/stretchr/testify/mock"
 
 	"github.com/vishwanathj/protovnfdparser/pkg/config"
-	dalmocks "github.com/vishwanathj/protovnfdparser/pkg/dataaccess/mocks"
+	dalmocks "github.com/vishwanathj/protovnfdparser/pkg/datarepo/mocks"
 	vsvcerr "github.com/vishwanathj/protovnfdparser/pkg/errors"
 	"github.com/vishwanathj/protovnfdparser/pkg/models"
 	umocks "github.com/vishwanathj/protovnfdparser/pkg/utils/mocks"
