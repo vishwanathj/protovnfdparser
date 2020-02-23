@@ -45,33 +45,33 @@ func (p *VnfdService) CreateVnfd(u *models.Vnfd) errors.VnfdsvcError {
 	// validate vnfd post body received from end user; need to marshal to json first
 	inputVnfd, err := json.Marshal(u)
 	if err != nil {
-		return errors.VnfdsvcError{err, http.StatusBadRequest}
+		return errors.VnfdsvcError{OrigError: err, HttpCode: http.StatusBadRequest}
 	}
 	log.Info(string(inputVnfd))
 
 	err = vnfdVerifier.ValidateVnfdPostBody(inputVnfd)
 	if err != nil {
-		return errors.VnfdsvcError{err, http.StatusBadRequest}
+		return errors.VnfdsvcError{OrigError: err, HttpCode: http.StatusBadRequest}
 	}
 
 	u.SetCreationTimeAttributes()
 	jsonval, err := json.Marshal(u)
 	if err != nil {
-		return errors.VnfdsvcError{err, http.StatusBadRequest}
+		return errors.VnfdsvcError{OrigError: err, HttpCode: http.StatusBadRequest}
 	}
 	log.WithFields(log.Fields{"vnfdStrJsonVal": string(jsonval)}).Debug()
 
 	//Before posting to the database, make sure, the newly created model adheres to the schema
 	err = vnfdVerifier.ValidateVnfdInstanceBody(jsonval)
 	if err != nil {
-		return errors.VnfdsvcError{err, http.StatusBadRequest}
+		return errors.VnfdsvcError{OrigError: err, HttpCode: http.StatusBadRequest}
 	}
 
 	err = p.dal.InsertVnfd(u)
 	if err != nil {
-		return errors.VnfdsvcError{err, http.StatusConflict}
+		return errors.VnfdsvcError{OrigError: err, HttpCode: http.StatusConflict}
 	}
-	return errors.VnfdsvcError{nil, http.StatusOK}
+	return errors.VnfdsvcError{OrigError: nil, HttpCode: http.StatusOK}
 }
 
 // GetVnfd method that retrieves a VNFD given the name or the ID
@@ -89,20 +89,20 @@ func (p *VnfdService) GetVnfd(nameorid string) (*models.Vnfd, errors.VnfdsvcErro
 	}
 	if err != nil {
 		log.Error("Query Error:", err)
-		return nil, errors.VnfdsvcError{err, http.StatusNotFound}
+		return nil, errors.VnfdsvcError{OrigError: err, HttpCode: http.StatusNotFound}
 	}
 	jsonval, err := json.Marshal(model)
 	if err != nil {
 		log.Error("JSON Marshall error:", err)
-		return nil, errors.VnfdsvcError{err, http.StatusNotFound}
+		return nil, errors.VnfdsvcError{OrigError: err, HttpCode: http.StatusNotFound}
 	}
 	err = vnfdVerifier.ValidateVnfdInstanceBody(jsonval)
 	if err != nil {
 		log.Error("Failed ValidateVnfdInstanceBody:", err)
-		return nil, errors.VnfdsvcError{err, http.StatusInternalServerError}
+		return nil, errors.VnfdsvcError{OrigError: err, HttpCode: http.StatusInternalServerError}
 	}
 	log.WithFields(log.Fields{"nameorid": nameorid}).Debug()
-	return model, errors.VnfdsvcError{nil, http.StatusOK}
+	return model, errors.VnfdsvcError{OrigError: nil, HttpCode: http.StatusOK}
 }
 
 // GetVnfds method that retrieves a paginated list of Vnfds
@@ -124,7 +124,7 @@ func (p *VnfdService) GetVnfds(start string, limitinp int, sort string) (models.
 
 	if err != nil {
 		log.Info(err)
-		return res, errors.VnfdsvcError{err, http.StatusInternalServerError}
+		return res, errors.VnfdsvcError{OrigError: err, HttpCode: http.StatusInternalServerError}
 	}
 
 	// Below validates each item in array adheres to schema and has not been manually tampered in DB directly
@@ -133,12 +133,12 @@ func (p *VnfdService) GetVnfds(start string, limitinp int, sort string) (models.
 		jsonval, err := json.Marshal(vnfds[i])
 		if err != nil {
 			log.Info("JSON Marshall error:", err)
-			return res, errors.VnfdsvcError{err, http.StatusInternalServerError}
+			return res, errors.VnfdsvcError{OrigError: err, HttpCode: http.StatusInternalServerError}
 		}
 		err = vnfdVerifier.ValidateVnfdInstanceBody(jsonval)
 		if err != nil {
 			log.Info("Failed ValidateVnfdInstanceBody:", err)
-			return res, errors.VnfdsvcError{err, http.StatusInternalServerError}
+			return res, errors.VnfdsvcError{OrigError: err, HttpCode: http.StatusInternalServerError}
 		}
 	}
 
@@ -165,13 +165,13 @@ func (p *VnfdService) GetVnfds(start string, limitinp int, sort string) (models.
 	jsonval, err := json.Marshal(res)
 	if err != nil {
 		log.Info("JSON Marshall error:", err)
-		return res, errors.VnfdsvcError{err, http.StatusInternalServerError}
+		return res, errors.VnfdsvcError{OrigError: err, HttpCode: http.StatusInternalServerError}
 	}
 	err = vnfdVerifier.ValidatePaginatedVnfdsInstancesBody(jsonval)
 	if err != nil {
-		return res, errors.VnfdsvcError{err, http.StatusInternalServerError}
+		return res, errors.VnfdsvcError{OrigError: err, HttpCode: http.StatusInternalServerError}
 	}
-	return res, errors.VnfdsvcError{nil, http.StatusOK}
+	return res, errors.VnfdsvcError{OrigError: nil, HttpCode: http.StatusOK}
 }
 
 // GetInputParamsSchemaForVnfd method that returns valid InputParams schema given a Vnfd
@@ -180,9 +180,9 @@ func (p *VnfdService) GetInputParamsSchemaForVnfd(jsonval []byte) ([]byte, error
 	inp, err := utils.GenerateJSONSchemaFromParameterizedTemplate(jsonval)
 	log.WithFields(log.Fields{"inp": string(inp)}).Debug("Inputs received from end user")
 	if err != nil {
-		return nil, errors.VnfdsvcError{err, http.StatusInternalServerError}
+		return nil, errors.VnfdsvcError{OrigError: err, HttpCode: http.StatusInternalServerError}
 	}
-	return inp, errors.VnfdsvcError{nil, http.StatusOK}
+	return inp, errors.VnfdsvcError{OrigError: nil, HttpCode: http.StatusOK}
 }
 
 // GetHealth method used for liveness probe by kubernetes

@@ -12,7 +12,8 @@ BUILD_DIR=build/package
 DEPLOYMENT_DIR=deployments/docker-compose
 #https://medium.com/pantomath/go-tools-gitlab-how-to-do-continuous-integration-like-a-boss-941a3a9ad0b6
 PKG_LIST=$(shell go list ./... | grep -v /vendor/)
-LINT_DKR_IMG=golangci/golangci-lint:v1.21.0-alpine
+LINT_DKR_IMG=golangci/golangci-lint:v1.18.0
+GOSEC_VER=v2.2.0
 #BINARY_UNIX=$(BINARY_NAME)_unix
 
 all: deps build unit
@@ -51,8 +52,12 @@ race:
 		$(GOTEST) -race ${PKG_LIST}
 msan:
 		$(GOTEST) -msan -short ${PKG_LIST}
+docker-gosec:
+		docker run -it -v ${PWD}:/JSONPDV securego/gosec:$(GOSEC_VER) /JSONPDV/...
 docker-lint:
-		docker run --rm -v ${PWD}:/workdir -w /workdir $(LINT_DKR_IMG) golangci-lint run -v
+		#docker run --rm -v ${PWD}:/workdir -w /workdir $(LINT_DKR_IMG) golangci-lint run -v
+		docker run --rm -v ${PWD}:/go/src/github.com/vishwanathj/protovnfdparser -w /go/src/github.com/vishwanathj/protovnfdparser $(LINT_DKR_IMG) \
+        		sh -c "go get -u github.com/golang/dep/cmd/dep  && dep ensure -v && golangci-lint run -v"
 docker-build:
 		docker-compose -f $(DEPLOYMENT_DIR)/docker-compose.yml build
 		#docker-compose -f $(DEPLOYMENT_DIR)/docker-compose.alpine.yml build

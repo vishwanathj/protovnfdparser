@@ -3,6 +3,7 @@ package utils
 import (
 	"fmt"
 	"io/ioutil"
+	"path/filepath"
 	"strings"
 
 	"github.com/vishwanathj/protovnfdparser/pkg/config"
@@ -109,7 +110,7 @@ func GenerateJSONSchemaFromParameterizedTemplate(parameterizedJSON []byte) ([]by
 // GetSchemaDefinitionFileAsJSONBuf reads a Schema file and returns JSON buf
 func GetSchemaDefinitionFileAsJSONBuf(schemaFileName string) ([]byte, error) {
 	log.Debug()
-	yamlText, err := ioutil.ReadFile(schemaFileName)
+	yamlText, err := ioutil.ReadFile(filepath.Clean(schemaFileName))
 
 	if err != nil {
 		log.Error(err)
