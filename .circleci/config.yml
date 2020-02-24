@@ -12,3 +12,6 @@ jobs:
       #- run: make docker-gosec
       - run: make docker-lint
       - run: make docker-unit
+      - run: make docker-integration
+      - store_artifacts:
+          path: results
