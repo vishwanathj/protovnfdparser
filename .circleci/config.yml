@@ -9,7 +9,10 @@ jobs:
     working_directory: ~/go/src/github.com/vishwanathj/JSON-Parameterized-Data-Validator
     steps:
       - checkout
-      #- run: make docker-gosec
+      - run:
+          name: run gosec
+          background: true
+          command: make docker-gosec
       - run: make docker-lint
       - run: make docker-unit
       - run: make docker-integration
